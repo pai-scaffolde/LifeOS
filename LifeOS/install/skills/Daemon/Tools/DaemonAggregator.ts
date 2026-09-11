@@ -54,6 +54,8 @@ const EXCLUDED_PATHS = [
   join(USER_DIR, "FINANCES"),
   join(USER_DIR, "HEALTH"),
   join(USER_DIR, "BUSINESS"),
+  // Business data lives here in the shipped USER scaffold (no USER/BUSINESS ships).
+  join(USER_DIR, "WORK", "YOUR_COMPANIES"),
   join(USER_DIR, "OPINIONS.md"),
   join(TELOS_DIR, "TRAUMAS.md"),
   join(KNOWLEDGE_DIR, "People"),
