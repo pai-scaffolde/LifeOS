@@ -410,8 +410,10 @@ function computePatterns(graph: Graph) {
   // Communities (Louvain)
   louvain.assign(graph, { resolution: 1 });
 
-  // PageRank (influence) + degree
-  pagerank.assign(graph, { getEdgeWeight: "weight" });
+  // PageRank (influence) + degree. graphology's power iteration never converges
+  // on an empty graph (it throws "failed to converge"), and a fresh install has
+  // no notes yet — skip it there; every reader below iterates zero nodes.
+  if (graph.order > 0) pagerank.assign(graph, { getEdgeWeight: "weight" });
 
   const degree = new Map<string, number>();
   graph.forEachNode((n) => degree.set(n, graph.degree(n)));
