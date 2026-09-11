@@ -73,7 +73,9 @@ const REGISTRY: Record<string, SourceSpec[]> = {
     { name: "IDEAL_STATE/MONEY.md", path: join(TELOS_DIR, "IDEAL_STATE", "MONEY.md") },
   ],
   business: [
-    { name: "BUSINESS/", path: join(USER_DIR, "BUSINESS"), expand: true },
+    // Business data lives under WORK/YOUR_COMPANIES/ in the shipped USER scaffold
+    // (the layout observability.ts reads); the scaffold ships no USER/BUSINESS.
+    { name: "WORK/YOUR_COMPANIES/", path: join(USER_DIR, "WORK", "YOUR_COMPANIES"), expand: true },
   ],
   local: [
     { name: "LOCAL/", path: join(USER_DIR, "LOCAL"), expand: true },
