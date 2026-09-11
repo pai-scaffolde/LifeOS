@@ -185,9 +185,13 @@ if [ -z "$OUT" ]; then
 fi
 mkdir -p "$(dirname "$OUT")"
 
-# Build common flag arrays.
-SS_FLAGS=(--context "$CTX" --save --out "$OUT")
+# Build common flag arrays. `screenshot` has no --out (that flag belongs to
+# `save` and `net`; the CLI rejects it): `--save` writes into the CLI's cwd and
+# reports the file as "filePath", so each capture runs from $OUT's directory
+# and resolve_saved() moves the daemon-named file onto $OUT.
+SS_FLAGS=(--context "$CTX" --save)
 [ "$FULL" -eq 1 ] && SS_FLAGS+=(--full)
+OUT_DIR="$(dirname "$OUT")"
 
 # --- helpers ---
 navigate_if_needed() {
@@ -246,10 +250,10 @@ content_ok() {
 }
 
 # interceptor screenshot prints JSON including "filePath" — the path it ACTUALLY
-# wrote. The --pixel path (captureVisibleTab) ignores --out and saves to a
-# daemon-chosen temp path, so after every capture we reconcile: if $OUT wasn't
-# populated, lift the real file from filePath into $OUT. This is what makes the
-# working pixel fallback actually satisfy the wrapper's contract.
+# wrote (`--save` names the file itself; the --pixel path may use a daemon-chosen
+# temp path), so after every capture we reconcile: if $OUT wasn't populated,
+# lift the real file from filePath into $OUT. This is what makes both capture
+# paths satisfy the wrapper's contract.
 resolve_saved() {
     local out_text="$1" fp
     [ -s "$OUT" ] && return 0
@@ -273,11 +277,11 @@ heal_bridge() {
 }
 
 dom_capture() {
-    interceptor screenshot "${SS_FLAGS[@]}" 2>&1
+    (cd "$OUT_DIR" && interceptor screenshot "${SS_FLAGS[@]}" 2>&1)
 }
 
 pixel_capture() {
-    interceptor screenshot "${SS_FLAGS[@]}" --pixel 2>&1
+    (cd "$OUT_DIR" && interceptor screenshot "${SS_FLAGS[@]}" --pixel 2>&1)
 }
 
 # --- 5/6/7. capture with bounded recovery. DOM-first, then a single classified
