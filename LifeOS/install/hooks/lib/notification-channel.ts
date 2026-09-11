@@ -35,6 +35,10 @@ const VOICE_LOG_PATH = paiPath('MEMORY', 'VOICE', 'voice-events.jsonl');
  *      carry only HOME+PATH; an interactive session always inherits TERM (kitty,
  *      Terminal.app, ssh). A session that was not spawned from a real terminal
  *      must never reach the speaker, no matter what the model inside it does.
+ *      The Claude desktop app is the one interactive surface with a speaker
+ *      and no terminal: it sets none of the TERM-family variables, only
+ *      CLAUDE_CODE_ENTRYPOINT=claude-desktop, so that marker counts as
+ *      terminal identity here (public issue #1975).
  *   3. Otherwise 'desktop' — terminal/main-session behavior is preserved.
  *
  * Spawner contract: every LifeOS tool that spawns `claude --print` also sets
@@ -46,7 +50,8 @@ export function getNotificationChannel(): NotificationChannel {
   const raw = process.env.LIFEOS_NOTIFICATION_CHANNEL;
   if (raw && raw.length > 0) return raw as NotificationChannel;
   const env = process.env;
-  if (!env.TERM && !env.TERM_PROGRAM && !env.KITTY_WINDOW_ID && !env.SSH_TTY) {
+  const desktopApp = env.CLAUDE_CODE_ENTRYPOINT === 'claude-desktop';
+  if (!env.TERM && !env.TERM_PROGRAM && !env.KITTY_WINDOW_ID && !env.SSH_TTY && !desktopApp) {
     return 'headless';
   }
   return 'desktop';
