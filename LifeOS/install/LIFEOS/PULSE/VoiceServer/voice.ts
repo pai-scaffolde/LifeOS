@@ -6,8 +6,12 @@
  *
  * Config resolution (3-tier):
  *   1. Caller sends voice_settings in request body → use directly (pass-through)
- *   2. Caller sends voice_id → look up in settings.json daidentity.voices → use those settings
- *   3. Neither → use settings.json daidentity.voices.main as default
+ *   2. Caller sends voice_id → look up in the loaded voices → use those settings
+ *   3. Neither → use the main voice as default
+ *
+ * The main voice comes from LIFEOS_CONFIG.toml [da.voices.main] (canonical,
+ * written by the Interview); settings.json daidentity.voices is the legacy
+ * runtime mirror and is consulted only when no config loads.
  *
  * Does NOT create its own HTTP server. Exports handleVoiceRequest() for the
  * parent pulse.ts to call on matching routes.
@@ -18,6 +22,7 @@ import { join } from "path"
 import { existsSync, readFileSync, rmSync } from "fs"
 import { log } from "../lib"
 import { disambiguateHomographs } from "../lib/homographs"
+import { loadLifeosConfig } from "../../TOOLS/LifeosConfig"
 import { homedir } from "node:os";
 
 // ── Public Config Interface ──
@@ -204,7 +209,44 @@ function applyPronunciations(text: string): string {
   return result
 }
 
-// ── Voice Config from settings.json ──
+// ── Voice Config: LIFEOS_CONFIG.toml first, settings.json mirror as fallback ──
+
+/**
+ * [da.voices.main] from LIFEOS_CONFIG.toml, the canonical voice source
+ * (SystemUserBoundary.md; the Interview writes it there). settings.json's
+ * daidentity block is a runtime mirror nothing in the shipped tree writes, so
+ * reading only the mirror left every fresh install speaking the template
+ * default voice. Null when no config loads yet (LifeosConfig throws on a
+ * missing file, an empty [da].name or a missing voice_id).
+ */
+function configMainVoice(): VoiceEntry | null {
+  try {
+    const main = loadLifeosConfig().da.voices.main
+    return {
+      voiceId: main.voiceId,
+      voiceName: main.voiceName,
+      stability: main.stability ?? 0.5,
+      similarity_boost: main.similarityBoost ?? 0.75,
+      style: main.style ?? 0.0,
+      speed: main.speed ?? 1.0,
+      use_speaker_boost: main.useSpeakerBoost ?? true,
+      volume: main.volume ?? 1.0,
+    }
+  } catch {
+    return null
+  }
+}
+
+function loadVoiceConfig(): LoadedVoiceConfig {
+  const loaded = loadVoiceConfigFromSettings()
+  const main = configMainVoice()
+  if (main) {
+    loaded.voices.main = main
+    loaded.voicesByVoiceId[main.voiceId] = main
+    loaded.defaultVoiceId = main.voiceId
+  }
+  return loaded
+}
 
 function loadVoiceConfigFromSettings(): LoadedVoiceConfig {
   const settingsPath = join(homedir(), ".claude", "settings.json")
@@ -639,10 +681,10 @@ export function startVoice(config: VoiceConfig): void {
   // Load pronunciation rules
   loadPronunciations(config.pronunciations_path)
 
-  // Load voice config from settings.json
-  voiceConfig = loadVoiceConfigFromSettings()
+  // Load voice config: LIFEOS_CONFIG.toml, then the settings.json mirror
+  voiceConfig = loadVoiceConfig()
 
-  // Resolve default voice ID: config override → settings.json → hardcoded fallback.
+  // Resolve default voice ID: config override → loaded config → hardcoded fallback.
   // The fallback must stay an ElevenLabs PREMADE voice ("Rachel") — it is the
   // last resort on unconfigured fresh installs, and account-library or famous
   // voices 401 there (famous_voice_not_permitted, LifeOS#1461 bug 5).
@@ -760,21 +802,24 @@ export async function handleVoiceRequest(req: Request): Promise<Response | null>
       const data = await req.json()
       const message = data.message || "Notification"
 
-      // Live-read voice ID from settings.json each call. Without this, pulse
-      // uses the defaultVoiceId cached at server startup — which is stale
-      // after the install wizard writes a new daidentity.voices.main.voiceId
-      // (the wizard runs AFTER pulse starts, so the cache holds the public
-      // template default instead of the user-picked voice). Live-read keeps
-      // /notify/personality honest with whatever the user last selected.
-      let voiceId: string | null = null
-      try {
-        const settingsFile = join(homedir(), ".claude", "settings.json")
-        const settings = JSON.parse(readFileSync(settingsFile, "utf-8"))
-        const main = settings?.daidentity?.voices?.main
-        const vid = (main?.voiceId || main?.VOICE_ID || main?.voice_id) as string | undefined
-        if (vid) voiceId = vid
-      } catch {
-        // Fall through — sendNotification will use the cached defaultVoiceId
+      // Live-read the voice ID each call. Without this, pulse uses the
+      // defaultVoiceId cached at server startup — which is stale after the
+      // Interview writes a new [da.voices.main] (it runs AFTER pulse starts,
+      // so the cache holds the public template default instead of the
+      // user-picked voice). Live-read keeps /notify/personality honest with
+      // whatever the user last selected: LIFEOS_CONFIG.toml first, then the
+      // settings.json mirror.
+      let voiceId: string | null = configMainVoice()?.voiceId ?? null
+      if (!voiceId) {
+        try {
+          const settingsFile = join(homedir(), ".claude", "settings.json")
+          const settings = JSON.parse(readFileSync(settingsFile, "utf-8"))
+          const main = settings?.daidentity?.voices?.main
+          const vid = (main?.voiceId || main?.VOICE_ID || main?.voice_id) as string | undefined
+          if (vid) voiceId = vid
+        } catch {
+          // Fall through — sendNotification will use the cached defaultVoiceId
+        }
       }
 
       log("info", `Voice: personality notification "${message}"`, { voiceId })
