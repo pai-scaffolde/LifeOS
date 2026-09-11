@@ -634,6 +634,9 @@ export interface ReviewResult {
   // A skip is a healthy no-op (nothing to curate — e.g. a just-/clear'ed
   // transcript), NOT a failure. Health checks must not count it as one.
   skipped?: boolean;
+  /** --dry-run: prompts were built and nothing else happened (no inference, no run dir, no ledger row). */
+  dry_run?: boolean;
+  prompt_chars?: { system: number; user: number };
   dispatch_summary?: DispatchSummary;
   error?: string;
 }
@@ -666,6 +669,18 @@ export async function review(opts: ReviewOptions = {}): Promise<ReviewResult> {
   // prompts reach the model. No-op in the live tree.
   const systemPrompt = renderNames(REVIEWER_SYSTEM_PROMPT);
   const userPrompt = renderNames(buildReviewerUserPrompt(exchanges, snapshot));
+
+  // --dry-run stops here: extract + prompt, no inference. It also writes no
+  // run directory and no ledger row — CortexHealth reads both as evidence of
+  // a real run (an orphaned run dir grades as "timed-out"), so a dry run must
+  // leave nothing behind for it to misread. (public issue #2073)
+  if (opts.dryRun) {
+    return {
+      ok: true, runId, transcript, exchanges: exchanges.length, inference_duration_ms: 0, parse_ok: true,
+      dry_run: true, prompt_chars: { system: systemPrompt.length, user: userPrompt.length },
+    };
+  }
+
   writeRunDebug(runId, {
     "prompt.system.md": systemPrompt,
     "prompt.user.md": userPrompt,
@@ -731,7 +746,7 @@ export async function review(opts: ReviewOptions = {}): Promise<ReviewResult> {
   writeRunDebug(runId, { "response.parsed.json": JSON.stringify(parsed.output, null, 2) });
 
   // 6. Dispatch
-  const { summary, results } = dispatchItems(parsed.output.items, { dryRun: opts.dryRun });
+  const { summary, results } = dispatchItems(parsed.output.items);
   writeRunDebug(runId, {
     "dispatch.log": [
       `Items: ${summary.total} (succeeded=${summary.succeeded} failed=${summary.failed} skipped_guard=${summary.skipped_guard})`,
@@ -844,6 +859,18 @@ async function smokeTest(): Promise<number> {
   check("E2E: memory write succeeded", r.dispatch_summary?.by_type.memory === 1);
   check("E2E: proposal enqueue succeeded", r.dispatch_summary?.by_type.proposal === 1);
   check("E2E: zero dispatch failures", r.dispatch_summary?.failed === 0);
+
+  // 7b. --dry-run: builds the prompts and stops — no inference, no run dir, no
+  //     ledger row (public issue #2073). Counted against the same synth transcript.
+  const runDirs = () => existsSync(RUNS_DEBUG_DIR) ? readdirSync(RUNS_DEBUG_DIR).length : 0;
+  const ledgerRows = () => existsSync(RUNS_LOG_PATH) ? readFileSync(RUNS_LOG_PATH, "utf8").split("\n").filter(Boolean).length : 0;
+  const dirsBefore = runDirs(), rowsBefore = ledgerRows();
+  const dry = await review({ input: synthPath, turns: 5, dryRun: true, mockInferenceResponse: mockResponse });
+  check("dry-run: returns ok with dry_run marker", dry.ok && dry.dry_run === true && dry.exchanges === 1);
+  check("dry-run: no inference", dry.inference_duration_ms === 0 && dry.dispatch_summary === undefined);
+  check("dry-run: no run directory written", runDirs() === dirsBefore, `${dirsBefore} → ${runDirs()}`);
+  check("dry-run: no ledger row written", ledgerRows() === rowsBefore, `${rowsBefore} → ${ledgerRows()}`);
+  check("dry-run: reports prompt sizes", (dry.prompt_chars?.system ?? 0) > 0 && (dry.prompt_chars?.user ?? 0) > 0);
 
   // Cleanup synth transcript + reviewer-runs debug dir for this run
   try {
