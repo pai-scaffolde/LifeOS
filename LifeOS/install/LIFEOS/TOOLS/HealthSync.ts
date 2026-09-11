@@ -352,10 +352,21 @@ async function runPull(args: string[]): Promise<number> {
     results,
   });
 
+  // A provider with no credentials is a skip, not a failure: one quiet line for
+  // the lot instead of an error= line per provider on every hourly run. The
+  // per-source reason still lands in current.json and the JSONL row above.
+  const skipped: SourceName[] = [];
   for (const result of results) {
+    if (result.status === "unconfigured" || result.status === "awaiting-first-export") {
+      skipped.push(result.source);
+      continue;
+    }
     log(
       `${result.source}: ${result.status}; records=${result.records}; ms=${result.ms}; error=${result.lastError ?? "none"}`,
     );
+  }
+  if (skipped.length > 0) {
+    log(`skipped (not configured): ${skipped.join(", ")}`);
   }
 
   return 0;
