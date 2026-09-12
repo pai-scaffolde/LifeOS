@@ -145,18 +145,19 @@ let pentestCache: { at: number; online: boolean } | null = null;
 // private-infrastructure identifiers (G18). `pentest_worker` was already
 // config-sourced; `security_worker` and `site_health_worker` joined it after
 // Max's 7.31.5 audit found their kebab-case names hardcoded two lines below a
-// comment claiming exactly this property. Defaults are generic shapes, not
-// this install's names: an install with different names sets the keys.
-const DEFAULT_SECURITY_WORKER = "infra-security";
-const DEFAULT_SITE_HEALTH_WORKER = "site-health";
-function arbolConfig(): { subdomain: string; token: string; pentestWorker?: string; securityWorker: string; siteHealthWorker: string } | null {
+// comment claiming exactly this property. A worker exists only when its key is
+// set: ~/.config/arbol/config.yaml is Arbol's general config, so its presence
+// says nothing about these two scanners, and defaulting their names turned
+// every Arbol install without them into "scanner unreachable" (a 502) instead
+// of the `not-configured` state the panel already knows how to render.
+function arbolConfig(): { subdomain: string; token: string; pentestWorker?: string; securityWorker?: string; siteHealthWorker?: string } | null {
   try {
     const y = readFileSync(join(HOME, ".config", "arbol", "config.yaml"), "utf8");
     const subdomain = y.match(/^subdomain:\s*"?([^"\n]+)"?/m)?.[1]?.trim();
     const token = y.match(/^auth_token:\s*"?([^"\n]+)"?/m)?.[1]?.trim();
     const pentestWorker = y.match(/^pentest_worker:\s*"?([^"\n]+)"?/m)?.[1]?.trim();
-    const securityWorker = y.match(/^security_worker:\s*"?([^"\n]+)"?/m)?.[1]?.trim() || DEFAULT_SECURITY_WORKER;
-    const siteHealthWorker = y.match(/^site_health_worker:\s*"?([^"\n]+)"?/m)?.[1]?.trim() || DEFAULT_SITE_HEALTH_WORKER;
+    const securityWorker = y.match(/^security_worker:\s*"?([^"\n]+)"?/m)?.[1]?.trim();
+    const siteHealthWorker = y.match(/^site_health_worker:\s*"?([^"\n]+)"?/m)?.[1]?.trim();
     if (!subdomain || !token) return null;
     return { subdomain, token, pentestWorker, securityWorker, siteHealthWorker };
   } catch { return null; }
@@ -176,7 +177,7 @@ type ArbolFetch =
 async function fetchArbol(): Promise<ArbolFetch> {
   if (arbolCache && Date.now() - arbolCache.at < 5 * 60_000) return { state: "ok", report: arbolCache.report };
   const cfg = arbolConfig();
-  if (!cfg) return { state: "not-configured" };
+  if (!cfg?.securityWorker) return { state: "not-configured" };
   try {
     const r = await fetch(`https://${cfg.securityWorker}.${cfg.subdomain}.workers.dev/report`, {
       headers: { Authorization: `Bearer ${cfg.token}` },
@@ -247,7 +248,7 @@ let siteHealthCache: { at: number; body: unknown } | null = null;
 async function siteHealthReport(): Promise<Response> {
   if (siteHealthCache && Date.now() - siteHealthCache.at < 60_000) return Response.json(siteHealthCache.body);
   const cfg = arbolConfig();
-  if (!cfg) return Response.json({ error: "arbol not configured (~/.config/arbol/config.yaml)" }, { status: 503 });
+  if (!cfg?.siteHealthWorker) return Response.json({ error: "site-health worker not configured (site_health_worker in ~/.config/arbol/config.yaml)" }, { status: 503 });
   try {
     const r = await fetch(`https://${cfg.siteHealthWorker}.${cfg.subdomain}.workers.dev/status`, {
       headers: { Authorization: `Bearer ${cfg.token}` },
@@ -378,7 +379,7 @@ async function arbolReport(): Promise<Response> {
   const res = await fetchArbol();
   if (res.state !== "ok") {
     return Response.json(
-      { error: res.state === "unreachable" ? `arbol worker unreachable: ${res.reason}` : "arbol not configured (~/.config/arbol/config.yaml)" },
+      { error: res.state === "unreachable" ? `arbol worker unreachable: ${res.reason}` : "security scanner not configured (security_worker in ~/.config/arbol/config.yaml)" },
       { status: res.state === "unreachable" ? 502 : 503 },
     );
   }
