@@ -4015,7 +4015,12 @@ function buildRecommendedNextAction(
 // and USER identity files parsed at request time. No values are invented and
 // no user-identifying content is hardcoded here (this file ships in releases).
 
-const BUNKER_STATE_FILE = join(HOME, ".bunker", "monitor-state.json")
+// Bunker monitor state is per-install USER data (BunkerSystem.md: per-app state
+// lives in the user tree; SystemUserBoundary.md: all per-install state under the
+// USER data home). It sits with the rest of the Bunker data in USER/PULSE/Bunker/
+// — the same directory PULSE/modules/bunker.ts reads shots from — not in a
+// home-relative dot-directory outside both the config root and the USER tree.
+const BUNKER_STATE_FILE = join(USER_DIR, "PULSE", "Bunker", "monitor-state.json")
 
 interface BunkerAppState { status: "green" | "red"; failing: string[]; since: string }
 
