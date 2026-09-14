@@ -323,13 +323,18 @@ function getRecentWorkSessions(paiDir: string): WorkSession[] {
           }
           if (artifactFile) {
             const isaContent = readFileSync(artifactFile, 'utf-8');
+            // Modern ISAs carry `phase:` + `progress:`; `id:`, `status:` and
+            // `verification_summary:` are the legacy keys and win when present.
+            // Without the fallbacks every current ISA printed "ISA (UNKNOWN, 0/0)".
             const idMatch = isaContent.match(/^id:\s*(.+)$/m);
             const statusMatch2 = isaContent.match(/^status:\s*(.+)$/m);
+            const phaseMatch2 = isaContent.match(/^phase:\s*"?([\w-]+)"?/m);
             const verifyMatch = isaContent.match(/^verification_summary:\s*"?(.+?)"?$/m);
+            const progressMatch = isaContent.match(/^progress:\s*"?(\d+\s*\/\s*\d+)"?/m);
             isa = {
-              id: idMatch?.[1]?.trim() || 'ISA',
-              status: statusMatch2?.[1]?.trim() || 'UNKNOWN',
-              progress: verifyMatch?.[1]?.trim() || '0/0'
+              id: idMatch?.[1]?.trim() || slug,
+              status: statusMatch2?.[1]?.trim() || phaseMatch2?.[1]?.trim() || 'UNKNOWN',
+              progress: verifyMatch?.[1]?.trim() || progressMatch?.[1]?.replace(/\s+/g, '') || '0/0'
             };
           }
         } catch { /* no artifacts */ }

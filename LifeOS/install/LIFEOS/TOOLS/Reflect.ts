@@ -170,6 +170,16 @@ export function validate(r: Partial<Reflection>): string[] {
   return errs;
 }
 
+/** `iteration:` from MEMORY/WORK/<slug>/ISA.md — the rewind hook bumps it there,
+ *  so a reflection written without --iteration must not silently report 1. */
+function isaIteration(slug: string): number | undefined {
+  try {
+    const head = readFileSync(join(LIFEOS, "MEMORY", "WORK", slug, "ISA.md"), "utf-8").slice(0, 2000);
+    const m = head.match(/^iteration:\s*(\d+)\s*$/m);
+    return m ? Number(m[1]) : undefined;
+  } catch { return undefined; }
+}
+
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : undefined;
@@ -202,7 +212,7 @@ if (import.meta.main) {
     ts: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
     session_id,
     slug,
-    iteration: Number(arg("iteration") ?? 1),
+    iteration: Number(arg("iteration") ?? isaIteration(slug) ?? 1),
     work_kind: arg("work-kind") ?? null,
     claims_closed: list("claims"),
     evidence_classes: list("evidence"),
