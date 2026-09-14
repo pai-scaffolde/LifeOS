@@ -115,7 +115,7 @@ Claude Code supports the following hook events:
 
 **What They Do:**
 - `WorkCompletionLearning.hook.ts` - Reads ISA.md frontmatter for work metadata and ISC section for criteria status, captures learning to `MEMORY/LEARNING/` for significant work sessions
-- `SessionCleanup.hook.ts` - Marks ISA.md frontmatter status→COMPLETED and sets completed_at timestamp, clears session state, resets tab, cleans session names
+- `SessionCleanup.hook.ts` - Marks work.json rows for the ending session complete, updates legacy ISA `status: ACTIVE`→`COMPLETED`/`completed_at` only, clears session state, resets tab, cleans session names. It never writes a modern ISA's `phase:` — a session ending is not the run finishing (2026-09-13)
 - `UpdateCounts.hook.ts` - Updates system counts (skills, hooks, signals, workflows, files) displayed in the startup banner
 - `MemoryHealthGate.hook.ts` - Runs `MemoryHealthCheck.ts`: asserts all autonomic-memory hooks registered in BOTH settings files, code files present on disk, last reviewer fire within 7d, state file readable. Writes `memory-health.jsonl`; WARN/CRITICAL to stderr. Non-blocking. *(Moved from Stop to SessionEnd in the 2026-07-11 consolidation, then also re-registered at Stop as an async second block — it runs on both events today; see Section 4.)*
 - `DocIntegrity.hook.ts` - Cross-reference + semantic drift checks + architecture-summary regen (`handlers/DocCrossRefIntegrity.ts`, `handlers/RebuildArchSummary.ts`); self-gates to a no-op when no system files changed. *(Moved from Stop to SessionEnd during the consolidation.)*

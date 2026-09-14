@@ -81,17 +81,22 @@ function clearSessionWork(sessionId?: string): void {
       const metaPath = join(workPath, 'META.yaml');
       let marked = false;
 
-      // Primary: update the ISA frontmatter — set phase: complete (modern format)
-      // and status: COMPLETED (legacy compat for any old artifacts still around).
+      // Legacy artifacts only: status: ACTIVE → COMPLETED and completed_at.
+      // A modern ISA's `phase:` is the open/closed signal and is NEVER stamped
+      // here — a session ending is not the run finishing. Until 2026-09-13 this
+      // block forced `phase: complete` on every active ISA at SessionEnd, which
+      // recorded unfinished runs (13/18 with five open claims) as done and primed
+      // false Resume-After-Complete rewinds on the next edit.
       // findArtifactPath prefers ISA.md and falls back to legacy PRD.md.
       if (isaPath && existsSync(isaPath)) {
-        let isaContent = readFileSync(isaPath, 'utf-8');
-        isaContent = isaContent.replace(/^phase:.*$/m, 'phase: complete');
-        isaContent = isaContent.replace(/^updated:.*$/m, `updated: ${getISOTimestamp()}`);
+        const before = readFileSync(isaPath, 'utf-8');
+        let isaContent = before;
         isaContent = isaContent.replace(/^status: ACTIVE$/m, 'status: COMPLETED');
         isaContent = isaContent.replace(/^completed_at: null$/m, `completed_at: "${getISOTimestamp()}"`);
-        writeFileSync(isaPath, isaContent, 'utf-8');
-        marked = true;
+        if (isaContent !== before) {
+          writeFileSync(isaPath, isaContent, 'utf-8');
+          marked = true;
+        }
       }
 
       // Legacy fallback: update META.yaml if it exists
