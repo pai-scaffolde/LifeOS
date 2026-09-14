@@ -51,7 +51,7 @@ bun run ~/.claude/skills/Evals/Tools/SuiteManager.ts check-saturation <use-case>
 ### Step 3: Collect Results
 
 Results are stored in:
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json` (per-run output)
+- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/run.json` (per-run output)
 - Use case directory: `UseCases/<use-case>/` (source of truth)
 
 ### Step 5: Report Summary

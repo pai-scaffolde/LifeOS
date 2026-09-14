@@ -100,7 +100,7 @@ Run the suite (which contains the use case + judge) via `EvalRunner.ts` and insp
 
 ```bash
 bun run ~/.claude/skills/Evals/Tools/EvalRunner.ts -s <suite>
-cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/<run-id>/results.json | jq '.trials[0].graders'
+cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<suite>/<run-id>/run.json | jq '.detail[0].trials[0].asserts'
 ```
 
 To exercise only a single test case while iterating on the judge, scope the suite config to one task in `UseCases/<name>/test-cases/` and re-run.

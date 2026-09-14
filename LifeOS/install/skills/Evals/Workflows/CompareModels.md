@@ -94,7 +94,7 @@ model_comparison:
 
 ### Step 4: Run Model Comparison
 
-Run the same suite once per model via `EvalRunner.ts`, then collect the per-run `results.json` and compare. The suite config encodes the model under test, so vary it across runs:
+Run the same suite once per model via `EvalRunner.ts`, then collect the per-run `run.json` and compare. The suite config encodes the model under test, so vary it across runs:
 
 ```bash
 # Sequential — three runs, one per model
@@ -109,13 +109,13 @@ bun run ~/.claude/skills/Evals/Tools/EvalRunner.ts -s <use-case>-gemini &
 wait
 ```
 
-Each run's `results.json` lands at `~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>-<model>/<run-id>/results.json`. Side-by-side comparison is done by reading those JSONs (`jq`) — there is no built-in cross-model comparison CLI in this skill.
+Each run's `run.json` lands at `~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<use-case>-<model>/<run-id>/run.json`. Side-by-side comparison is done by reading those JSONs (`jq`) — there is no built-in cross-model comparison CLI in this skill.
 5. View side-by-side results
 
 ### Step 5: Collect Results
 
 Results stored in:
-- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/`
+- `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>-<model>/<run-id>/`
 - `LIFEOS/MEMORY/STATE/Evals-Results/<use-case>/models/<run-id>/comparison.json`
 
 ### Step 6: Generate Comparison Report

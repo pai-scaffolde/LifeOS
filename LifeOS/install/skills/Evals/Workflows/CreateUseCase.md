@@ -231,7 +231,7 @@ bun run ~/.claude/skills/Evals/Tools/SuiteManager.ts show <name>
 ```bash
 # Run first evaluation to verify setup
 bun run ~/.claude/skills/Evals/Tools/EvalRunner.ts -s <name>
-cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<name>/$(ls -1t ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<name>/ | head -1)/results.json | jq '.summary'
+cat ~/.claude/LIFEOS/MEMORY/STATE/Evals-Results/<name>/latest.json | jq '.summary'
 ```
 
 Review:
