@@ -286,7 +286,9 @@ async function executeWork(issue: Issue, config: WorkerConfig): Promise<{ output
   // Headless subprocess: never the desktop voice channel (2026-08-14 leak).
   env.LIFEOS_NOTIFICATION_CHANNEL = env.LIFEOS_NOTIFICATION_CHANNEL || "headless"
   const proc = Bun.spawn(
-    [claudePath, "--print", "--model", "sonnet", "--tools", "", "--output-format", "text", "--setting-sources", "", "--system-prompt", ""],
+    // --safe-mode, not `--setting-sources ''`: the empty source list also drops the
+    // user login on claude-code 2.1.270 (same fix as Inference.ts, 2026-09-13).
+    [claudePath, "--print", "--model", "sonnet", "--tools", "", "--output-format", "text", "--safe-mode", "--system-prompt", ""],
     {
       stdin: new Blob([prompt]),
       stdout: "pipe",

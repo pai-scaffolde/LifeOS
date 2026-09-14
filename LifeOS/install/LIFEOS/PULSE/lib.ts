@@ -601,15 +601,18 @@ export async function spawnClaude(prompt: string, opts: { model: string; timeout
   //   2. Strip ANTHROPIC_API_KEY from env — bun auto-loads ~/.claude/.env, and if the
   //      key is present `claude` CLI prefers it over subscription even without
   //      --bare. Mirrors LIFEOS/TOOLS/Inference.ts:114.
-  // Flag set mirrors Inference.ts: --tools '' and --setting-sources '' keep the
+  // Flag set mirrors Inference.ts: --tools '' and --safe-mode keep the
   // subprocess lightweight (no hooks, no CLAUDE.md auto-discovery), so we still
-  // get the cost-reduction benefit --bare was intended to provide.
+  // get the cost-reduction benefit --bare was intended to provide. Was
+  // `--setting-sources ''`, which on claude-code 2.1.270 also drops the user
+  // login ("Not logged in"); --safe-mode disables the same customizations while
+  // keeping auth (same fix as Inference.ts, 2026-09-13).
   const args = [
     "--print",
     "--model", opts.model,
     "--tools", "",
     "--output-format", "text",
-    "--setting-sources", "",
+    "--safe-mode",
     "--system-prompt", "",
   ]
   const claudePath = Bun.which("claude") ?? join(homedir(), ".local", "bin", "claude")

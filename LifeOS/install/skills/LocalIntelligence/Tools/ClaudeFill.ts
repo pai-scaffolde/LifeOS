@@ -113,7 +113,9 @@ async function spawnResearch(prompt: string, model: string, timeoutMs: number): 
       "--print",
       "--model", model,
       "--output-format", "text",
-      "--setting-sources", "",
+      // --safe-mode, not `--setting-sources ''`: the empty source list also drops the
+      // user login on claude-code 2.1.270 (same fix as Inference.ts, 2026-09-13).
+      "--safe-mode",
       "--system-prompt", "",
       "--tools", "WebSearch,WebFetch",
       "--allowedTools", "WebSearch,WebFetch",
