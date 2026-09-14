@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * @version 3.2.2
+ * @version 3.2.3
  * TRIGGER: UserPromptSubmit (routing match, always-on) — also runs on PostToolUse via PostToolObserver and on PostToolUseFailure.
  * AlgorithmNudge — the Algorithm live nudge layer ("Events ask the rest").
  *
@@ -174,6 +174,13 @@ interface NudgeState {
    *  stretch the build counter is blind to (2026-08-02 audit: a whole
    *  release-notes session ran 100% inline on MAX and never tripped a row). */
   workCallsSinceDispatch?: number;
+  /** Latch: sweep-delegation has asked its question for the current inline
+   *  stretch. Cleared only by an Agent dispatch. Without it the row re-fired every
+   *  20 calls + 5 min through a long verification sweep — re-asking about calls
+   *  already in the model's context, the same violation of the spec's
+   *  "state the model cannot observe" bound that cut the `principal` row
+   *  (Max wiring audit 2026-09-14, finding 5). */
+  sweepDelegationFired?: boolean;
   lastNudgeAt: Record<string, number>;
   /** The primary conversation's transcript_path, recorded at UserPromptSubmit —
    *  the one event that never fires for subagents. Tool events whose
@@ -218,6 +225,7 @@ function loadState(sessionId: string): NudgeState {
     silenceLogged: s.silenceLogged ?? false,
     buildCallsSinceDispatch: s.buildCallsSinceDispatch ?? 0,
     workCallsSinceDispatch: s.workCallsSinceDispatch ?? 0,
+    sweepDelegationFired: s.sweepDelegationFired ?? false,
     lastNudgeAt: s.lastNudgeAt ?? {},
     primaryTranscript: s.primaryTranscript,
   };
@@ -610,6 +618,8 @@ export const INHERITED_DISPATCH_NUDGE =
 // evidence sweeps. Measured 2026-08-02: an entire release-notes session ran ~25 inline calls
 // on MAX with zero dispatches and no row fired. Same BPE bound as exec-delegation — this is
 // a QUESTION about an aggregate the model can't see, not a classifier deciding what counts.
+// It asks ONCE per inline stretch (latched until the next dispatch): the first 20 calls are
+// an aggregate the model didn't count; every later re-ask is about calls it has just made.
 const SWEEP_DELEGATION_THRESHOLD = 20;  // consecutive non-dispatch tool calls of any kind
 
 export const SWEEP_DELEGATION_NUDGE =
@@ -804,6 +814,7 @@ export function run(input: HookInput): string | null {
       if (DISPATCH_TOOLS.has(tool)) {
         state.buildCallsSinceDispatch = 0;
         state.workCallsSinceDispatch = 0;
+        state.sweepDelegationFired = false;  // new stretch → the question is live again
         const hasModel = typeof (input.tool_input as Record<string, unknown>)?.model === 'string';
         if (!hasModel && cooled(state, 'inherited-dispatch', now)) {
           fire(state, 'inherited-dispatch', now, INHERITED_DISPATCH_NUDGE, out);
@@ -819,9 +830,12 @@ export function run(input: HookInput): string | null {
             fire(state, 'exec-delegation', now, EXEC_DELEGATION_NUDGE, out);
           }
         }
-        if (state.workCallsSinceDispatch >= SWEEP_DELEGATION_THRESHOLD
-          && cooled(state, 'sweep-delegation', now)) {
-          state.workCallsSinceDispatch = 0;
+        // Latched, not cooled: the latch is the bound. A time cooldown here would
+        // also silence a genuinely new stretch (dispatch → 20 more inline calls
+        // inside five minutes), which is exactly the moment the question is live.
+        if (!state.sweepDelegationFired
+          && state.workCallsSinceDispatch >= SWEEP_DELEGATION_THRESHOLD) {
+          state.sweepDelegationFired = true;
           fire(state, 'sweep-delegation', now, SWEEP_DELEGATION_NUDGE, out);
         }
       }
