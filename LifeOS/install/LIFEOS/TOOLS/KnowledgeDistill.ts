@@ -261,7 +261,9 @@ async function runHeadless(dryRun: boolean): Promise<void> {
   }
   let items: DigestItem[];
   try { items = JSON.parse(jsonMatch[0]).items ?? []; } catch (e) {
-    console.error(`[distill] synthesis JSON unparseable: ${e}`);
+    // Keep the head and tail of what came back: a truncated or fenced answer is
+    // only diagnosable from the bytes, same as the no-JSON branch above.
+    console.error(`[distill] synthesis JSON unparseable: ${e}\n${out.slice(0, 500)}\n…\n${out.slice(-300)}\n${proc.stderr.toString().slice(0, 500)}`);
     process.exit(1);
   }
 
