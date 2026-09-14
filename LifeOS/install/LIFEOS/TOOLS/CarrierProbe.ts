@@ -114,7 +114,11 @@ function runChild(): Promise<{ envelope: Record<string, unknown> | null; raw: st
       "--model", "haiku", // cheap driver; the DISPATCH is what's under test
       "--allowedTools", "Task,Agent",
       "--output-format", "json",
-      "--setting-sources", "", // no hooks: keeps agent-starts.json/statusline clean of synthetic entries
+      // No hooks: keeps agent-starts.json/statusline clean of synthetic entries.
+      // Was `--setting-sources ""`, which on claude-code 2.1.270 also drops the
+      // user login ("Not logged in"); --safe-mode disables the same customizations
+      // while keeping auth (same fix as Inference.ts, 2026-09-13).
+      "--safe-mode",
       "--system-prompt", "You are a test driver. Follow the instruction literally.",
     ];
 

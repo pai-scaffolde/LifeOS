@@ -261,7 +261,12 @@ async function inferenceAttempt(options: InferenceOptions, modelOverride?: strin
       ...(hasImages ? ['--allowedTools', 'Read'] : ['--tools', '']),
       '--output-format', 'json',
       '--exclude-dynamic-system-prompt-sections',  // v3.23 C2: cache-friendly prompt prefix (claude-code v2.1.98+)
-      '--setting-sources', '',
+      // No hooks/skills/plugins in the headless child. --safe-mode disables those
+      // customizations while keeping auth and model selection. `--setting-sources ''`
+      // is NOT an equivalent: on claude-code 2.1.270 an empty source list also drops
+      // the user-level login, so every headless call returns "Not logged in ·
+      // Please run /login" (distill, 2026-09-13).
+      '--safe-mode',
       ...systemPromptArgs,
     ];
 
