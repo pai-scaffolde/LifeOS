@@ -13,7 +13,9 @@ import { parseArgs } from 'util';
 const EVALS_DIR = join(import.meta.dir, '..');
 const SUITES_DIR = join(EVALS_DIR, 'Suites');
 // Run artifacts live outside the skill tree (runtime state, not skill content).
-const RESULTS_DIR = join(EVALS_DIR, '..', '..', 'LifeOS', 'MEMORY', 'STATE', 'Evals-Results');
+// `LIFEOS`, matching EvalRunner.ts — the directory it reads is the one the runner
+// writes. The old `LifeOS` spelling only worked on case-insensitive volumes.
+const RESULTS_DIR = join(EVALS_DIR, '..', '..', 'LIFEOS', 'MEMORY', 'STATE', 'Evals-Results');
 
 /**
  * Ensure directories exist
