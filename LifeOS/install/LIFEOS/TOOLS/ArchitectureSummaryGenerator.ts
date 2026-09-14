@@ -287,7 +287,13 @@ function cmdCheck(): void {
   // Only Algorithm-QUALIFIED mentions count ("Algorithm v8.4.0", "ALGORITHM/v8.4.0.md") — the doc
   // legitimately cites hook/Memory/Bunker versions and historical notes, and a bare-semver match
   // flagged all of them as drift, making --check permanently fail (public issue #1501).
-  const archContent = fs.readFileSync(ARCH_SOURCE, "utf-8");
+  // The `## Architecture Decisions` log is append-only history by the doc's own
+  // rule ("entries stay as recorded") — an AD row that says a rule was superseded
+  // at Algorithm vX.Y.Z is a dated fact, not drift, and must never be edited to
+  // dodge this check. Only the living sections above it are scanned.
+  const fullArch = fs.readFileSync(ARCH_SOURCE, "utf-8");
+  const decisionsAt = fullArch.indexOf("\n## Architecture Decisions");
+  const archContent = decisionsAt === -1 ? fullArch : fullArch.slice(0, decisionsAt);
   const current = detectAlgorithmVersion();
   const cited = [...archContent.matchAll(/(?:Algorithm\s+v|ALGORITHM\/v)(\d+\.\d+\.\d+)/gi)].map(m => m[1]);
   const stale = cited.filter(v => compareSemver(v, current) < 0);
