@@ -96,12 +96,12 @@ WARM:COOL RATIO: [From emotion table]
 
 ## Step 4: Generate Visual Asset
 
-**Use the Art Skill (essay-art workflow) to create the image.**
+**Use the Art Skill (`skills/Art/Workflows/Essay.md` workflow) to create the image.**
 
 ### Invoke Art Skill
 
 ```
-Invoke Art Skill → essay-art workflow
+Invoke Art Skill → skills/Art/Workflows/Essay.md workflow
 ```
 
 ### Prompt Template

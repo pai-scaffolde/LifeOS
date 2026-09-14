@@ -59,7 +59,7 @@ PRODUCT DOCUMENTATION
 SALES-READY OUTPUT
 ```
 
-It produces three things: sales narratives (story explanations that capture the value proposition), visual assets (charcoal sketch art that conveys the concept), and scripts (clear, succinct messaging tied to what you're selling). Internally it leans on the story-explanation narrative engine and the Art essay-art workflow for the visual.
+It produces three things: sales narratives (story explanations that capture the value proposition), visual assets (charcoal sketch art that conveys the concept), and scripts (clear, succinct messaging tied to what you're selling). Internally it leans on the story-explanation narrative engine and the Art skill's `skills/Art/Workflows/Essay.md` workflow for the visual.
 
 ---
 
@@ -108,7 +108,7 @@ It produces three things: sales narratives (story explanations that capture the 
 
 This skill combines:
 - **A story-explanation skill** - For narrative extraction
-- **art skill (essay-art workflow)** - For visual generation
+- **art skill (`skills/Art/Workflows/Essay.md` workflow)** - For visual generation
 - **Sales-specific framing** - Value proposition focus
 
 ---
