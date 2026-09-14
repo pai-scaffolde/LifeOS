@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * @version 1.5.0
+ * @version 1.5.1
  * ISASync.hook.ts — ISA → work.json sync via PostToolUse
  *
  * TRIGGER: PostToolUse (Write, Edit, MultiEdit, Read)
@@ -29,6 +29,15 @@
  * because the strip was the last derived-state line the model self-computed.
  * No ISA write → no block → no strip: an unregistered run can no longer
  * claim a state the board doesn't show.
+ *
+ * v1.5.1 (Read refreshes the body hash): the Read branch now calls
+ * refreshBodyHashBySlug() before the heartbeat bump, so the registry's
+ * bodyHash matches the file the model just read. Read still never writes the
+ * ISA — only the registry's observation of it. Writes that bypass
+ * Write/Edit/MultiEdit (Bash heredocs, subagents, git, this hook's own
+ * Decisions append) used to leave that hash stale, and the next edit — even a
+ * frontmatter-only one, which hashBody() excludes — read as a body change and
+ * rewound a complete ISA to `learn`.
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -40,6 +49,7 @@ import {
   syncToWorkJson,
   readRegistry,
   bumpLastToolActivityBySlug,
+  refreshBodyHashBySlug,
   ARTIFACT_FILENAME,
   LEGACY_ARTIFACT_FILENAME,
 } from './lib/isa-utils';
@@ -72,10 +82,18 @@ async function main(): Promise<string | null> {
   const isWorkISA = filePath.includes('MEMORY/WORK/');
 
   // v6.9.0: Read trigger — bump heartbeat on the slug, rebind UUID, debounced.
-  // No file write-back, no rewind. Read alone never mutates the ISA.
+  // No file write-back, no rewind. Read alone never mutates the ISA. It does
+  // refresh the registry's bodyHash from disk, so the Edit that follows a Read
+  // compares against the body as it was just observed, not against whatever
+  // Write/Edit last saw — Bash heredocs, subagents, git and hook appends all
+  // write ISAs without firing this hook, and a stale hash turned a
+  // frontmatter-only edit on a complete ISA into a false rewind (2026-09-14).
   if (toolName === 'Read') {
     const slugMatch = filePath.match(/MEMORY\/WORK\/([^/]+)\//);
-    if (slugMatch) bumpLastToolActivityBySlug(slugMatch[1], input.session_id);
+    if (slugMatch) {
+      refreshBodyHashBySlug(slugMatch[1], filePath);
+      bumpLastToolActivityBySlug(slugMatch[1], input.session_id);
+    }
     return null;
   }
 

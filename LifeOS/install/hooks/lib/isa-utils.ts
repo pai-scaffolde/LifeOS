@@ -17,7 +17,7 @@
 // module reads ISA.md first and falls back to PRD.md for sessions created
 // before the rename. New sessions always write ISA.md.
 
-import { writeFileSync, readdirSync, statSync, existsSync, mkdirSync, appendFileSync } from 'fs';
+import { writeFileSync, readFileSync, readdirSync, statSync, existsSync, mkdirSync, appendFileSync } from 'fs';
 import { join, basename } from 'path';
 import { createHash } from 'crypto';
 import { paiPath } from './paths';
@@ -1075,6 +1075,35 @@ export function bumpLastToolActivity(filePath: string): boolean {
   const slug = slugFromPath(filePath);
   if (!slug) return false;
   return bumpLastToolActivityBySlug(slug);
+}
+
+/**
+ * Refresh the registry's view of an ISA body from disk without touching the ISA
+ * or its phase. Called on Read: the Edit tool requires a Read first, so after
+ * this the next Edit's `bodyChanged` measures only that edit's own delta.
+ * Without it, anything that wrote the ISA outside Write/Edit (a Bash heredoc,
+ * a subagent, git, a hook's own append) left `bodyHash` stale, and the next
+ * frontmatter-only edit on a complete ISA read as a body change and rewound it
+ * to `learn` (three false rewinds on one ISA, 2026-09-14). Never debounced,
+ * never gated on phase — a stale hash is wrong at any age.
+ */
+export function refreshBodyHashBySlug(slug: string, isaPath: string): boolean {
+  if (!slug || !isaPath) return false;
+  try {
+    if (!existsSync(isaPath)) return false;
+    const registry = readRegistry();
+    const session = registry.sessions[slug];
+    if (!session) return false;
+    const content = readFileSync(isaPath, 'utf-8');
+    const bodyHash = hashBody(content);
+    if (session.bodyHash === bodyHash && session.lastBodySize === content.length) return false;
+    session.bodyHash = bodyHash;
+    session.lastBodySize = content.length;
+    writeRegistry(registry, 'refreshBodyHashBySlug');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

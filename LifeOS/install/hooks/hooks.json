@@ -116,6 +116,10 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/ISAStaleWriteGuard.hook.ts"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/ISASync.hook.ts"
           }
         ]
       },
