@@ -24,7 +24,7 @@
  *   2 — scan error (unreadable root, etc)
  */
 
-import { readFileSync, statSync, existsSync, readdirSync, realpathSync } from 'fs';
+import { readFileSync, statSync, lstatSync, existsSync, readdirSync, realpathSync } from 'fs';
 import { join, resolve, dirname, relative, extname, sep } from 'path';
 import { execSync } from 'child_process';
 import { homedir } from "node:os";
@@ -71,6 +71,10 @@ const EXCLUDE_DIR_NAMES = new Set([
 
 // Top-level path segments (relative to CLAUDE_DIR) that are entirely ignored.
 const EXCLUDE_PATH_PREFIXES = [
+  'skills/LifeOS/install',     // the shipped release payload as installed — the twin of LIFEOS_RELEASES on a
+                               // maintainer tree. Its refs describe the maintainer's tree, not this install
+                               // (60 false blocks on a fresh 7.40.4 install, 2026-09-14)
+  'jobs',                      // background-job scratch (harness-owned; holds scratch copies of docs)
   'LIFEOS/MEMORY',
   'LIFEOS/USER/MEMORY',        // post-Phase-G symlink target — MEMORY moved into the user's private USER-data repo (2026-05-22→23)
   'LIFEOS/PULSE/Observability/.next',
@@ -228,6 +232,21 @@ function isScannableFile(absPath: string): boolean {
   return ext === '.md' || ext === '.ts' || ext === '.tsx' || ext === '.json';
 }
 
+// A skill directory that is a symlink to somewhere outside ~/.claude is vendor-owned
+// (Interceptor installs its four skills as root-owned symlinks into
+// /Library/Application Support). Their relative links point into the vendor's own
+// repo layout — the same class as plugin caches, and not ours to fix.
+const CLAUDE_DIR_REAL = (() => { try { return realpathSync(CLAUDE_DIR); } catch { return CLAUDE_DIR; } })();
+function isForeignSkillLink(absPath: string): boolean {
+  const rel = relative(CLAUDE_DIR, absPath);
+  if (!rel.startsWith(`skills${sep}`)) return false;
+  try {
+    if (!lstatSync(absPath).isSymbolicLink()) return false;
+    const real = realpathSync(absPath);
+    return real !== CLAUDE_DIR_REAL && !real.startsWith(CLAUDE_DIR_REAL + sep);
+  } catch { return false; }
+}
+
 // ── File walker (iterative, visited-set by realpath to avoid symlink cycles) ──
 
 function walk(root: string): string[] {
@@ -268,6 +287,7 @@ function walk(root: string): string[] {
         continue;
       }
       if (st.isDirectory()) {
+        if (isForeignSkillLink(full)) continue;
         if (!isExcludedDir(full)) stack.push(full);
       } else if (st.isFile()) {
         if (isScannableFile(full)) out.push(full);
@@ -278,6 +298,8 @@ function walk(root: string): string[] {
 }
 
 // ── Reference extraction ──
+
+const ABSENCE_MARKER = /\bis absent\b|does not exist on this install|not (?:in|part of) the (?:public )?release payload|never ship(?:s|ped)|removed 20\d\d|deleted 20\d\d|retired 20\d\d|maintainer tree/i;
 
 // Match path-like tokens. We capture the raw ref (group 1) and later resolve.
 // These patterns are tuned to minimize false positives on code literals.
@@ -505,6 +527,9 @@ function extractRefs(content: string, referringFile: string): RefHit[] {
 
       // Line number
       const lineNum = content.substring(0, m.index).split('\n').length;
+      // A line that itself says the target is gone or never ships is a documented
+      // absence, not a broken pointer (same contract as IntegrityCheck's master_doc_paths).
+      if (!isTs && ABSENCE_MARKER.test(content.split('\n')[lineNum - 1] || '')) continue;
 
       refs.push({
         raw,
@@ -536,7 +561,10 @@ function getChangedFiles(): Set<string> {
 // ── Main ──
 
 interface Finding {
-  type: 'missing' | 'stale' | 'orphan';
+  /** `absent` — the target does not exist here but is not a broken reference: the
+   *  principal creates it on demand, or the release strips it on an installed tree.
+   *  Reported, never blocking (IntegrityCheck blocks on `missing` only). */
+  type: 'missing' | 'stale' | 'orphan' | 'absent';
   file: string;   // relative to CLAUDE_DIR
   line: number | null;
   ref: string | null;
@@ -594,7 +622,37 @@ const filesToReport = changed
 // at runtime, not static docs. A doc referencing one is not a broken ref even
 // before the first write creates it (e.g. a documented JSONL stream that has
 // not fired yet). Mirrors the LIFEOS/PULSE/state source exclusion, target-side.
-const RUNTIME_TARGET_SUBSTRINGS = ['MEMORY/PULSE_DATA/', 'MEMORY/OBSERVABILITY/', 'MEMORY/STATE/'];
+// Widened 2026-09-14: on a fresh install every MEMORY subtree, every `state/` dir and
+// every JSONL stream is empty until something writes it (deploys.jsonl, the verification
+// logs, WorldModels/INDEX.md, Assistant/state/… — 15 false blocks on 7.40.4).
+const RUNTIME_TARGET_SUBSTRINGS = ['MEMORY/', '/state/'];
+const isRuntimeTarget = (rel: string): boolean =>
+  RUNTIME_TARGET_SUBSTRINGS.some(s => rel.includes(s)) || rel.endsWith('.jsonl');
+
+// Targets the principal materializes when they set the feature up — the USER tree,
+// the settings overlay, the checkpoint allowlist, an MCP config. A doc pointing at
+// one is a setup instruction, not rot.
+const PRINCIPAL_CREATED_NAMES = new Set(['checkpoint-repos.txt', '.mcp.json', 'settings.user.json', 'settings.local.json']);
+// A reference made FROM the principal's own USER tree is theirs too: the scaffold
+// READMEs describe tools the principal (or their DA) writes into that tree.
+const isPrincipalCreated = (rel: string, referrer: string): boolean =>
+  rel.includes('USER/') || referrer.includes('USER/') || PRINCIPAL_CREATED_NAMES.has(rel.split('/').pop() || '');
+
+// Targets the release strips: tests and the test harness, private zones, maintainer
+// orchestration scripts, the system settings layer. Only an INSTALLED tree treats
+// these as absent-by-construction; on the maintainer tree (skills/_LIFEOS present —
+// the same tell IntegrityCheck's master_doc_paths uses) they stay `missing`.
+const INSTALLED_TREE = !existsSync(join(CLAUDE_DIR, 'skills', '_LIFEOS'));
+const isReleaseStripped = (rel: string): boolean => {
+  const base = rel.split('/').pop() || '';
+  return /\.(test|spec)\.tsx?$/.test(base)
+    || /(^|\/)test\//.test(rel)
+    || base === 'bunfig.toml'
+    || base === 'settings.system.json'
+    || rel.startsWith('LIFEOS/ARBOL/')
+    || rel.startsWith('skills/_')
+    || /(^|\/)workflows\/[^/]+\.js$/.test(rel);
+};
 
 /** Referrers whose references are imports, not descriptions — never stale-checked. */
 const CODE_REFERRER = /\.(ts|tsx|js|jsx|mjs|cjs|json)$/;
@@ -628,14 +686,18 @@ for (const [file, refs] of fileRefs) {
       // Skip runtime-generated targets — they're written at runtime, so a doc
       // referencing one is not a broken reference.
       const relResolved = relative(CLAUDE_DIR, r.resolved);
-      if (RUNTIME_TARGET_SUBSTRINGS.some(s => relResolved.includes(s))) continue;
+      if (isRuntimeTarget(relResolved)) continue;
+      const absent = isPrincipalCreated(relResolved, relFile) ? 'principal-created — materializes when the principal sets it up'
+        : INSTALLED_TREE && isReleaseStripped(relResolved) ? 'release-stripped on an installed tree'
+        : null;
       findings.push({
-        type: 'missing',
+        type: absent ? 'absent' : 'missing',
         file: relFile,
         line: r.line,
         ref: r.raw,
         resolved: r.resolved,
         label: r.label,
+        ...(absent ? { detail: absent } : {}),
       });
       continue;
     }
@@ -704,6 +766,7 @@ const elapsedMs = Date.now() - startedAt;
 const missing = uniqueFindings.filter(f => f.type === 'missing');
 const stale = uniqueFindings.filter(f => f.type === 'stale');
 const orphan = uniqueFindings.filter(f => f.type === 'orphan');
+const absent = uniqueFindings.filter(f => f.type === 'absent');
 
 const summary = {
   scannedFiles,
@@ -714,6 +777,7 @@ const summary = {
     missing: missing.length,
     stale: stale.length,
     orphan: orphan.length,
+    absent: absent.length,
   },
 };
 
@@ -738,9 +802,15 @@ if (jsonOutput) {
       console.error(`  ${f.file}`);
     }
   }
+  if (absent.length > 0 && !quiet) {
+    console.error(`\nℹ️  ABSENT BY CONSTRUCTION (${absent.length}) — not blocking:`);
+    for (const f of absent) {
+      console.error(`  ${f.file}:${f.line} → ${f.ref}  (${f.detail})`);
+    }
+  }
   if (!quiet || uniqueFindings.length > 0) {
     console.error(
-      `\nReferenceCheck: ${scannedFiles} files, ${scannedRefs} refs, ${missing.length} missing, ${stale.length} stale, ${orphan.length} orphan — ${elapsedMs}ms`
+      `\nReferenceCheck: ${scannedFiles} files, ${scannedRefs} refs, ${missing.length} missing, ${stale.length} stale, ${orphan.length} orphan, ${absent.length} absent — ${elapsedMs}ms`
     );
   }
   if (uniqueFindings.length === 0 && !quiet) {

@@ -520,8 +520,14 @@ function checkReferences(): void {
     }
     const rc = JSON.parse(raw);
     const s = rc.summary || {};
-    note = `${rc.scannedRefs ?? '?'} refs across ${rc.scannedFiles ?? '?'} files: ${s.missing ?? 0} missing, ${s.stale ?? 0} stale, ${s.orphan ?? 0} orphan`;
+    // `absent` = the target is missing by construction on THIS tree (release-stripped
+    // test files / private zones on an installed tree, or files the principal creates
+    // when they set a feature up). Nothing here can fix them, so they are counted in
+    // the note rather than pushed as findings — the info budget is for fixable noise.
+    const absentNote = s.absent ? `, ${s.absent} absent by construction` : '';
+    note = `${rc.scannedRefs ?? '?'} refs across ${rc.scannedFiles ?? '?'} files: ${s.missing ?? 0} missing, ${s.stale ?? 0} stale, ${s.orphan ?? 0} orphan${absentNote}`;
     for (const f of rc.findings || []) {
+      if ((f.kind || f.type) === 'absent') continue;
       const isMissing = (f.kind || f.type) === 'missing';
       findings.push({
         detail: `${f.kind || f.type}: ${f.ref ?? f.reference ?? ''} in ${f.file ?? f.referrer ?? '?'}`,
@@ -1643,6 +1649,11 @@ function checkPermissionRuleShape(): void {
 // RATIONALE STRING into settings.json and never wrote the `model` key beside it, so every
 // session since ran a rung below doctrine while both documents asserted otherwise, and
 // nothing observed the gap until 2026-07-30. A comment explaining a pin is not a pin.
+
+// A trailing `[<n>m]` / `[<n>k]` selects the CONTEXT WINDOW, not the model — `fable[1m]`
+// resolves to the same top-rung model as `fable` (verified 2026-09-14: `claude --model
+// 'fable[1m]' -p …` reports modelUsage claude-fable-5-1[1m]). Compare the alias alone.
+const pinnedAlias = (m: unknown): unknown => typeof m === 'string' ? m.replace(/\[\d+[km]\]$/i, '') : m;
 function checkModelRungPin(): void {
   const findings: Finding[] = [];
   const settingsPath = join(CLAUDE_DIR, 'settings.json');
@@ -1669,7 +1680,7 @@ function checkModelRungPin(): void {
       detail: `settings.json has no "model" key — the main loop runs the harness default, while doctrine claims the top rung (${topRung}). This exact gap has happened before and gone undetected.`,
       blocking: true,
     });
-  } else if (settings.model !== topRung) {
+  } else if (pinnedAlias(settings.model) !== topRung) {
     findings.push({
       detail: `settings.json pins model="${settings.model}" but EFFORT_MODEL.max is "${topRung}" — config and the rung registry disagree`,
       blocking: true,
@@ -1677,7 +1688,7 @@ function checkModelRungPin(): void {
   }
 
   // A pinned ID rots on the next lineup bump; the alias auto-tracks.
-  if (typeof settings.model === 'string' && /\d{6,}|claude-/.test(settings.model)) {
+  if (typeof settings.model === 'string' && /\d{6,}|claude-/.test(pinnedAlias(settings.model))) {
     findings.push({ detail: `settings.json pins a model ID ("${settings.model}") rather than a tier alias — it will rot on the next lineup bump`, blocking: true });
   }
 

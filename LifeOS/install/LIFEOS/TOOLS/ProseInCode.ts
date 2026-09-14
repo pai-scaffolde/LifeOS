@@ -30,7 +30,9 @@ import { homedir } from "node:os";
 const ROOT = join(homedir(), ".claude");
 const DEFAULT_SCAN = ["hooks", "LIFEOS/TOOLS", "LIFEOS/ATLAS", "LIFEOS/PULSE/modules", "skills"];
 
-const SKIP_DIRS = new Set(["node_modules", ".git", "Plugins", "LIFEOS_RELEASES", "archive", "dist", "build", "MEMORY"]);
+// "install" = the shipped release payload mirrored under skills/LifeOS/ on an installed tree — the
+// twin of LIFEOS_RELEASES; its comments are the maintainer's, scanned once there.
+const SKIP_DIRS = new Set(["node_modules", ".git", "Plugins", "LIFEOS_RELEASES", "archive", "dist", "build", "MEMORY", "install"]);
 
 type Kind = "HISTORY" | "SUPERSEDED" | "TOMBSTONE";
 
