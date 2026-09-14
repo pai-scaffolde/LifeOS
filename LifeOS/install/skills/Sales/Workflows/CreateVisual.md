@@ -53,7 +53,7 @@ Takes a sales narrative or value proposition and creates a matching visual asset
 
 ### Step 4: Construct Prompt
 
-**Use the Art Skill essay-art template:**
+**Use the Art skill's `skills/Art/Workflows/Essay.md` template:**
 
 ```
 Sophisticated charcoal architectural sketch. [ARTIST REFERENCE] influence.
