@@ -4,13 +4,41 @@
  *
  * Zero AI cost: HTTP GET → check status → notify on failure.
  *
- * Output: failure details or NO_ACTION
+ * No cron entry for this ships in PULSE.toml — it only makes sense on installs
+ * that name sites to check, which add a `[[job]]` row to
+ * LIFEOS/USER/CONFIG/PULSE.user.toml (same shape as airgradient-poll, public
+ * issue #1504: shipped default-on it reported "ok" every 5 minutes with nothing
+ * to check).
+ *
+ * Output: failure details or NO_ACTION; exit 78 (EX_CONFIG) when no sites are
+ * set; exit 1 when the check itself crashes.
  */
+
+import { join } from "node:path"
+import { readFileSync, existsSync } from "node:fs"
+import { homedir } from "node:os"
+
+const HOME = process.env.HOME ?? process.env.USERPROFILE ?? homedir()
+
+// Bun auto-loads .env from CWD only; Pulse cron runs from LIFEOS/PULSE/, so the
+// symlink at ~/.claude/.env isn't picked up. Read it directly if env is empty.
+function loadSitesFromDotenv(): string | null {
+  const envPath = join(HOME, ".claude", ".env")
+  if (!existsSync(envPath)) return null
+  try {
+    const raw = readFileSync(envPath, "utf8")
+    const match = raw.match(/^\s*LIFEOS_PULSE_HEALTH_SITES\s*=\s*(.+?)\s*$/m)
+    if (!match) return null
+    return match[1].replace(/^["']|["']$/g, "")
+  } catch {
+    return null
+  }
+}
 
 // Sites to health-check. Override via LIFEOS_PULSE_HEALTH_SITES env var
 // (comma-separated "name|url" pairs, e.g. "blog|https://blog.example.com,api|https://api.example.com").
 // Empty default ships in the public release; principals add their own sites.
-const SITES = (process.env.LIFEOS_PULSE_HEALTH_SITES ?? "")
+const SITES = (process.env.LIFEOS_PULSE_HEALTH_SITES || loadSitesFromDotenv() || "")
   .split(",")
   .map((entry) => entry.trim())
   .filter(Boolean)
@@ -53,6 +81,11 @@ async function checkSite(site: { name: string; url: string }): Promise<HealthRes
 }
 
 async function main() {
+  if (SITES.length === 0) {
+    // sysexits(3) EX_CONFIG — not configured, not broken, and not "all sites up".
+    console.error("healthcheck not configured: set LIFEOS_PULSE_HEALTH_SITES (comma-separated name|url pairs)")
+    process.exit(78)
+  }
   const results = await Promise.all(SITES.map(checkSite))
   const failures = results.filter((r) => !r.ok)
 
@@ -71,5 +104,9 @@ async function main() {
 
 main().catch((err) => {
   console.error(`health-check error: ${err}`)
-  console.log("NO_ACTION")
+  // A crash is a failure, not "all sites up". Pulse fails a script job on a
+  // nonzero exit (lib.ts spawnScript); printing a sentinel and exiting 0 made
+  // a permanently broken check indistinguishable from a healthy one, so the
+  // MAX_FAILURES breaker could never trip.
+  process.exit(1)
 })

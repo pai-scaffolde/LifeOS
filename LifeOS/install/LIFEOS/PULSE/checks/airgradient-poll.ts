@@ -12,7 +12,7 @@
  * (public issue #1504, @tzioup: it shipped default-on and polled forever on
  * installs with nothing to poll).
  *
- * Output: NO_ACTION on success, or a one-line error message.
+ * Output: NO_ACTION on success; on failure, one stderr line and exit 1.
  */
 
 import { join } from "node:path"
@@ -120,5 +120,8 @@ async function main() {
 
 main().catch((err) => {
   console.error(`airgradient-poll error: ${err instanceof Error ? err.message : err}`)
-  console.log("NO_ACTION")
+  // A crash is a failure, not a successful poll. Pulse fails a script job on a
+  // nonzero exit (lib.ts spawnScript); the sentinel plus exit 0 reported every
+  // API error and unwritable cache dir as "ok".
+  process.exit(1)
 })

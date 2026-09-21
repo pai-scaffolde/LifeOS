@@ -165,14 +165,11 @@ command = "bun run Performance/cost-aggregator.ts"
 output = "log"
 enabled = true
 
-[[job]]
-name = "healthcheck"
-schedule = "*/5 * * * *"
-type = "script"
-command = "bun run checks/health.ts"
-output = "ntfy"
-enabled = true
-
+# NOTE: healthcheck no longer ships here — it checks the sites named in
+# LIFEOS_PULSE_HEALTH_SITES, and shipped default-on it reported "ok" every
+# 5 minutes with zero sites to check (same shape as airgradient-poll below).
+# Installs that name sites add the [[job]] row to LIFEOS/USER/CONFIG/PULSE.user.toml;
+# the script now exits 78 (EX_CONFIG) when unset.
 # NOTE: cost-tracker moved to LIFEOS/USER/CONFIG/PULSE.user.toml on 2026-05-03 —
 # scans a user-specific call-site fingerprint, doesn't belong in the public template.
 # NOTE: airgradient-poll moved to LIFEOS/USER/CONFIG/PULSE.user.toml on 2026-07-17 —

@@ -5,7 +5,8 @@
  * Zero AI cost: Google Calendar API → format → voice notification.
  * Checks for events in the next 30 minutes.
  *
- * Output: spoken notification or NO_EVENTS
+ * Output: spoken notification or NO_EVENTS; exit 78 (EX_CONFIG) when
+ * GOOGLE_CALENDAR_REFRESH_TOKEN is unset; exit 1 when the check crashes.
  */
 
 import { readFileSync } from "fs"
@@ -52,9 +53,9 @@ async function main() {
   const env = loadEnv()
 
   if (!env.GOOGLE_CALENDAR_REFRESH_TOKEN) {
-    console.error("GOOGLE_CALENDAR_REFRESH_TOKEN not set")
-    console.log("NO_EVENTS")
-    return
+    // sysexits(3) EX_CONFIG — not configured, not broken, and not "no meetings".
+    console.error("calendar check not configured: set GOOGLE_CALENDAR_REFRESH_TOKEN in ~/.claude/.env")
+    process.exit(78)
   }
 
   try {
@@ -112,7 +113,10 @@ async function main() {
     console.log(parts.join(". ") + ".")
   } catch (e: unknown) {
     console.error("Calendar check failed:", e instanceof Error ? e.message : String(e))
-    console.log("NO_EVENTS")
+    // A crash is a failure, not "no meetings coming up". NO_EVENTS is in
+    // lib.ts SENTINELS and Pulse fails a script job only on a nonzero exit,
+    // so a dead token or an unreachable API read as a quiet, healthy check.
+    process.exit(1)
   }
 }
 

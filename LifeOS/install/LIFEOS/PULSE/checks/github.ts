@@ -5,7 +5,7 @@
  * Zero AI cost: GitHub API → filter new PRs/reviews → notification.
  * Monitors fabric, LifeOS, substrate, telos, SecLists.
  *
- * Output: summary of new activity or NO_ACTION
+ * Output: summary of new activity or NO_ACTION; on failure, exit 1.
  */
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
@@ -196,6 +196,9 @@ async function main() {
 if (import.meta.main) {
   main().catch((err) => {
     console.error(`github-check error: ${err}`)
-    console.log("NO_ACTION")
+    // A crash is a failure, not "no new PRs". Pulse fails a script job on a
+    // nonzero exit (lib.ts spawnScript); the sentinel plus exit 0 kept the
+    // MAX_FAILURES breaker from ever seeing a broken check.
+    process.exit(1)
   })
 }

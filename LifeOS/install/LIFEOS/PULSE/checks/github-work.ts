@@ -5,7 +5,7 @@
  * Zero AI cost: GitHub API → find ready issues → claim → spawn claude session.
  * Uses GitHub App installation tokens (1-hour TTL, auto-refresh).
  *
- * Output: summary of claimed work or NO_ACTION
+ * Output: summary of claimed work or NO_ACTION; on failure, exit 1.
  */
 
 import { join } from "path"
@@ -327,8 +327,10 @@ async function main() {
     token = await getInstallationToken(config)
   } catch (err) {
     console.error(`github-work: token error: ${err}`)
-    console.log("NO_ACTION")
-    return
+    // No token means no work was checked, let alone claimed. A missing .pem is
+    // arguably EX_CONFIG, but from inside this catch it is indistinguishable
+    // from a GitHub outage or a revoked app, so exit 1 is the honest signal.
+    process.exit(1)
   }
 
   const readyIssues = await findReadyIssues(config, token)
@@ -359,5 +361,8 @@ async function main() {
 
 main().catch((err) => {
   console.error(`github-work error: ${err}`)
-  console.log("NO_ACTION")
+  // A crash is a failure, not "no work to claim". Pulse fails a script job on
+  // a nonzero exit (lib.ts spawnScript); the sentinel plus exit 0 reported a
+  // worker that could not reach GitHub at all as "ok".
+  process.exit(1)
 })
