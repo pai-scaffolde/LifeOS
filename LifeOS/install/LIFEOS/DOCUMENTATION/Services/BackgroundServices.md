@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-08T00:00:00Z
+last_updated: 2026-09-21T00:00:00Z
 last_updated_by: da
 convention: pai-freshness-v1
 version: 1.0.0
@@ -64,9 +64,23 @@ bun ~/.claude/LIFEOS/TOOLS/Services.ts doc                 # regenerate the tabl
 | **Bookmark pipeline watchdog** `com.lifeos.bookmark-watchdog` | capture | every 4h | yes | Watches the X bookmark → summarize/idea pipeline for stalls. | per-install private infrastructure — defined in `LIFEOS/USER/CONFIG/services.json`, NOT in the public release payload |
 | **Backups** `com.lifeos.backups` | maintenance | daily/scheduled | yes | Daily 03:00 PT repo backup (Git LFS). | per-install private infrastructure — defined in `LIFEOS/USER/CONFIG/services.json`, NOT in the public release payload |
 
+Pulse also runs these jobs inside its own process rather than under launchd.
+`Services.ts status` reports their last run, last result and consecutive-failure count.
+
+| Pulse in-process job | Schedule |
+|----------------------|----------|
+| `assistant-diary` | `0 23 * * *` |
+| `assistant-growth` | `0 4 * * 0` |
+| `assistant-heartbeat` | `*/30 * * * *` |
+| `assistant-tasks` | `* * * * *` |
+| `cost-aggregation` | `*/15 * * * *` |
+| `life-morning-brief` | `0 7 * * *` |
+| `memory-consolidation` | `0 3 * * *` |
+| `proposal-gc` | `45 3 * * *` |
+
 ## Fresh install
 
-The LifeOS install skill (`skills/LifeOS/`, `DeployComponents.ts`) stands up the core set during Setup. `Services.ts install --all` is the complete-coverage path: point a fresh macOS install at it and every service comes up, opt-ins included. macOS-only — `launchd` services skip cleanly on Linux/Windows. **Integration status:** `DeployComponents.ts` currently covers ~9 components; wiring it to read `Services.ts`'s registry so a single Setup step covers all 16 is the tracked follow-up.
+The LifeOS install skill (`skills/LifeOS/`, `DeployComponents.ts`) stands up the core set during Setup. `Services.ts install --all` is the complete-coverage path: point a fresh macOS install at it and every service comes up, opt-ins included. macOS-only — `launchd` services skip cleanly on Linux/Windows. **Integration status:** `DeployComponents.ts` currently covers ~9 components; wiring it to read `Services.ts`'s registry so a single Setup step covers every registry row is the tracked follow-up.
 
 ## Examples
 

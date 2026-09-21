@@ -12,8 +12,9 @@ for (const __k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
  *
  * Pulse's default behavior is to silently skip jobs after 3 consecutive failures.
  * That's exactly the trap "no band in town tonight" can hide for weeks. This
- * meta-monitor reads Pulse state + observability logs and screams loudly if any
- * monitored job has been silent beyond 3× its schedule.
+ * meta-monitor reads Pulse's configured cron roster and its state file and
+ * screams loudly if any enabled job has latched or gone silent beyond 3× its
+ * schedule.
  *
  * Emits one of:
  *   "NO_ACTION"          — everything healthy
@@ -22,9 +23,7 @@ for (const __k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
  * Runs via PULSE.toml as a script-type job every 4 hours.
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { homedir } from "node:os";
+import { pulseCronJobs } from "../../TOOLS/Services.ts";
 
 // Normalize env path vars that Claude Code injects without shell expansion (LifeOS#1404)
 for (const k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
@@ -33,28 +32,13 @@ for (const k of ["LIFEOS_DIR", "LIFEOS_CONFIG_DIR", "PROJECTS_DIR"]) {
 }
 
 
-const HOME = process.env.HOME ?? process.env.USERPROFILE ?? homedir();
-const LIFEOS_DIR = process.env.LIFEOS_DIR || join(HOME, ".claude", "LIFEOS");
-const PULSE_STATE = join(LIFEOS_DIR, "PULSE", "state", "state.json");
-const PULSE_TOML = join(LIFEOS_DIR, "PULSE", "PULSE.toml");
-
-// Jobs we specifically monitor — the Current→Ideal pipeline ones.
-const WATCHED_JOBS = [
-  "monitor-example-a",
-  "monitor-example-b",
-  "monitor-example-c",
-  "monitor-example-d",
-  "monitor-example-e",
-  "monitor-example-h",
-  "monitor-example-f",
-  "monitor-example-g",
-  "apple-health-export-ingest",
-  "compute-gap",
-  "lifelog-digest",
-  "staleness-review",
-];
-
-type PulseState = Record<string, { lastRun?: string; lastSuccess?: string; consecutiveFailures?: number; schedule?: string }>;
+// The roster comes from Pulse's own config, overlaid with its state file —
+// the same source `Services.ts status` reads. The hardcoded
+// WATCHED_JOBS list this replaced named twelve jobs, none of which appears in
+// PULSE.toml or PULSE.user.toml, so every iteration hit the "not configured
+// yet" branch and the monitor reported NO_ACTION without examining anything.
+// It also read `state[job]` from a file shaped `{ version, jobs: { ... } }`,
+// so even correct names would never have matched a state entry.
 
 function parseCronToMs(cron: string): number {
   // Very rough approximation for "every X hours" detection.
@@ -79,58 +63,21 @@ function parseCronToMs(cron: string): number {
   return 24 * 60 * 60 * 1000;
 }
 
-function loadPulseSchedules(): Record<string, string> {
-  if (!existsSync(PULSE_TOML)) return {};
-  const toml = readFileSync(PULSE_TOML, "utf-8");
-  const schedules: Record<string, string> = {};
-  const jobRegex = /\[\[job\]\]\s*([\s\S]*?)(?=\[\[job\]\]|\Z)/g;
-  let m: RegExpExecArray | null;
-  while ((m = jobRegex.exec(toml)) !== null) {
-    const block = m[1];
-    const nameMatch = block.match(/name\s*=\s*"([^"]+)"/);
-    const schedMatch = block.match(/schedule\s*=\s*"([^"]+)"/);
-    if (nameMatch && schedMatch) schedules[nameMatch[1]] = schedMatch[1];
-  }
-  return schedules;
-}
-
-function loadPulseState(): PulseState {
-  if (!existsSync(PULSE_STATE)) return {};
-  try {
-    return JSON.parse(readFileSync(PULSE_STATE, "utf-8")) as PulseState;
-  } catch {
-    return {};
-  }
-}
-
 function main(): void {
-  const state = loadPulseState();
-  const schedules = loadPulseSchedules();
   const now = Date.now();
   const stale: string[] = [];
 
-  for (const job of WATCHED_JOBS) {
-    const schedule = schedules[job];
-    if (!schedule) continue; // not configured yet (P1 scaffolding)
-    const jobState = state[job];
-    if (!jobState) {
-      // Never run since scheduling. Tolerate for 2× schedule interval.
-      continue;
+  // Disabled jobs never run by design — /healthz counts only enabled ones too.
+  for (const job of pulseCronJobs().filter((j) => j.enabled)) {
+    if (job.latched) {
+      stale.push(`${job.name}: ${job.failures} consecutive failures — SILENT SKIP risk`);
     }
-    const expectedIntervalMs = parseCronToMs(schedule);
-    const tolerance = 3 * expectedIntervalMs;
-    const lastSuccess = jobState.lastSuccess || jobState.lastRun;
-    if (!lastSuccess) {
-      stale.push(`${job}: never succeeded`);
-      continue;
-    }
-    const sinceMs = now - new Date(lastSuccess).getTime();
-    if (sinceMs > tolerance) {
+    if (!job.lastRun) continue; // never come due yet; tolerate until it does
+    const expectedIntervalMs = parseCronToMs(job.schedule);
+    const sinceMs = now - job.lastRun.getTime();
+    if (sinceMs > 3 * expectedIntervalMs) {
       const hoursStale = Math.round(sinceMs / (60 * 60 * 1000));
-      stale.push(`${job}: last success ${hoursStale}h ago (expected every ${Math.round(expectedIntervalMs / 3600000)}h)`);
-    }
-    if ((jobState.consecutiveFailures || 0) >= 3) {
-      stale.push(`${job}: ${jobState.consecutiveFailures} consecutive failures — SILENT SKIP risk`);
+      stale.push(`${job.name}: last run ${hoursStale}h ago (expected every ${Math.round(expectedIntervalMs / 3600000)}h)`);
     }
   }
 

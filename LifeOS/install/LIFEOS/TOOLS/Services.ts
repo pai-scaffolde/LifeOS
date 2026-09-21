@@ -244,6 +244,114 @@ export function findPlist(label: string): { path: string; installed: boolean } |
   return IS_LINUX ? findPlistLinux(label) : findPlistDarwin(label);
 }
 
+/* ── Pulse in-process cron ──────────────────────────────────────────────── */
+
+/**
+ * Pulse runs a second set of scheduled jobs inside its own process, so launchd
+ * knows nothing about them and neither did this tool or the doc it generates.
+ * That blind spot is how a job can sit latched behind Pulse's circuit breaker
+ * for days while `status` shows a green board: the breaker's skip is a log line
+ * in a file nobody tails, and `com.lifeos.pulse` itself is running the whole
+ * time, so every surface that watches launchd says "running".
+ *
+ * Enumerate the jobs Pulse is CONFIGURED to run, then overlay its state file.
+ * State alone would hide exactly the job most worth seeing: one that has never
+ * come due writes no state entry, so a weekly job latched dead from its first
+ * fire is invisible. The config is the roster; state is the scoreboard.
+ *
+ * Both tiers are read the way pulse.ts reads them (LIFEOS/PULSE/lib.ts
+ * loadConfig): PULSE.toml is the shipped roster, PULSE.user.toml overrides it
+ * by job name. Scanned here rather than imported — Pulse's lib.ts carries
+ * module-level state and a wide import chain that a read-only CLI should not
+ * pull in, and this file already parses plists the same way.
+ */
+const PULSE_STATE = join(PULSE, "state", "state.json");
+const PULSE_TOML = join(PULSE, "PULSE.toml");
+const PULSE_USER_TOML = join(LIFEOS, "USER", "CONFIG", "PULSE.user.toml");
+
+/** Pulse skips a job at this many consecutive failures (pulse.ts MAX_FAILURES). */
+export const PULSE_MAX_FAILURES = 3;
+
+export interface PulseJob {
+  name: string;
+  /** Five-field cron expression from the config, or "?" if the row omits one. */
+  schedule: string;
+  enabled: boolean;
+  /** Declared ONLY in PULSE.user.toml — this instance's own, not part of the
+   *  shipped stack. A user row that merely overrides a shipped job (enabling
+   *  one PULSE.toml ships disabled) is not per-instance: the job ships. */
+  perInstance: boolean;
+  lastRun: Date | null;
+  /** "ok" | "error" from Pulse, or "never ran" when it has no state entry yet. */
+  lastResult: string;
+  failures: number;
+  /** Past the breaker threshold: skipped until the retry cooldown elapses. */
+  latched: boolean;
+}
+
+/** `[[job]]` rows from one Pulse TOML: name → schedule + enabled. */
+function declaredPulseJobs(path: string): Map<string, { schedule: string; enabled: boolean }> {
+  const out = new Map<string, { schedule: string; enabled: boolean }>();
+  let raw: string;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch {
+    return out;
+  }
+  for (const chunk of raw.split(/^\[\[job\]\]\s*$/m).slice(1)) {
+    const body = chunk.split(/^\[/m)[0];              // stop at the next TOML table
+    const name = body.match(/^name\s*=\s*"([^"]+)"/m)?.[1];
+    if (!name) continue;
+    out.set(name, {
+      schedule: body.match(/^schedule\s*=\s*"([^"]+)"/m)?.[1] ?? "?",
+      enabled: !/^enabled\s*=\s*false/m.test(body),  // pulse.ts defaults absent to true
+    });
+  }
+  return out;
+}
+
+export function pulseCronJobs(): PulseJob[] {
+  let state: Record<string, { lastRun?: number; lastResult?: string; consecutiveFailures?: number }> = {};
+  try {
+    state = (JSON.parse(readFileSync(PULSE_STATE, "utf8")) as { jobs?: typeof state }).jobs ?? {};
+  } catch { /* no state file yet — the roster still stands */ }
+
+  const user = declaredPulseJobs(PULSE_USER_TOML);
+  const system = declaredPulseJobs(PULSE_TOML);
+  const roster = new Map([...system].map(([n, j]) => [n, { ...j, perInstance: false }]));
+  for (const [n, j] of user) roster.set(n, { ...j, perInstance: !system.has(n) });
+  // A state entry with no config row is a job that was removed or renamed; keep
+  // it visible rather than dropping the only record that it ever ran.
+  for (const n of Object.keys(state)) {
+    if (!roster.has(n)) roster.set(n, { schedule: "(no longer in config)", enabled: false, perInstance: false });
+  }
+
+  return [...roster]
+    .map(([name, cfg]) => {
+      const st = state[name];
+      return {
+        name,
+        schedule: cfg.schedule,
+        enabled: cfg.enabled,
+        perInstance: cfg.perInstance,
+        lastRun: st?.lastRun ? new Date(st.lastRun) : null,
+        lastResult: st ? st.lastResult ?? "?" : "never ran",
+        failures: st?.consecutiveFailures ?? 0,
+        latched: (st?.consecutiveFailures ?? 0) >= PULSE_MAX_FAILURES,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function ago(d: Date | null): string {
+  if (!d) return "—";
+  const m = Math.floor((Date.now() - d.getTime()) / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  if (m < 60 * 24) return `${Math.floor(m / 60)}h ago`;
+  return `${Math.floor(m / 1440)}d ago`;
+}
+
 function cadenceOfDarwin(plistPath: string): string {
   try {
     const x = readFileSync(plistPath, "utf8");
@@ -307,6 +415,34 @@ if (cmd === "status" || cmd === "list") {
       console.log("  " + state.padEnd(13) + cad.padEnd(16) + `${s.title}  (${s.label})`);
     }
   }
+  const inProcess = pulseCronJobs();
+  if (inProcess.length) {
+    console.log("\n  ── pulse in-process cron ──");
+    for (const j of inProcess) {
+      const glyph = !j.enabled
+        ? "○ disabled"
+        : j.latched
+          ? "✗ latched"
+          : j.lastResult === "ok"
+            ? "● ok"
+            : `⚠ ${j.lastResult}`;
+      const fails = j.failures ? `  ${j.failures} consecutive failure(s)` : "";
+      console.log("  " + glyph.padEnd(13) + j.schedule.padEnd(16) + ago(j.lastRun).padEnd(12) + j.name + fails);
+    }
+    const stale = inProcess.filter((j) => j.enabled && !j.lastRun);
+    if (stale.length) {
+      console.log(`\n  ⚠️ enabled but never ran: ${stale.map((j) => j.name).join(", ")}`);
+    }
+    const latched = inProcess.filter((j) => j.latched);
+    if (latched.length) {
+      console.log(
+        `\n  ⚠️ circuit breaker latched (skipped until the retry cooldown): ${latched.map((j) => j.name).join(", ")}`,
+      );
+    }
+    console.log(
+      "\n  in-process rows are Pulse's configured cron roster (PULSE.toml + PULSE.user.toml) with its state file overlaid.",
+    );
+  }
   const missingCore = REGISTRY.filter((s) => !s.optIn && !loaded.has(s.label));
   if (missingCore.length) console.log(`\n  ⚠️ core not running: ${missingCore.map((s) => s.label).join(", ")}`);
 } else if (cmd === "doc") {
@@ -322,6 +458,23 @@ if (cmd === "status" || cmd === "list") {
       ? "per-install private infrastructure — defined in `LIFEOS/USER/CONFIG/services.json`, NOT in the public release payload"
       : s.install.startsWith("#") ? s.install.slice(1).trim() : `\`${s.install.replace(HOME, "~")}\``;
     console.log(`| **${s.title}** \`${s.label}\` | ${s.category} | ${cad} | ${s.optIn ? "yes" : "core"} | ${s.purpose} | ${inst} |`);
+  }
+  // The launchd registry is only half the scheduled surface. Emitting the
+  // in-process jobs here is what stops the generated doc from implying that
+  // the table above is everything that runs on a cadence.
+  // Shipped roster only. A PULSE.user.toml job is this instance's own, and the
+  // generated table is a committed page — the same containment rule the
+  // per-instance launchd rows follow above. `status` shows the live merge.
+  const inProcess = pulseCronJobs().filter((j) => !j.perInstance);
+  if (inProcess.length) {
+    // Schedule is config, not state. Last-run and failure counts are live
+    // state: frozen into a committed doc they are stale the moment the page
+    // lands, and `status` already reports them.
+    console.log("\nPulse also runs these jobs inside its own process rather than under launchd.");
+    console.log("`Services.ts status` reports their last run, last result and consecutive-failure count.\n");
+    console.log("| Pulse in-process job | Schedule |");
+    console.log("|----------------------|----------|");
+    for (const j of inProcess) console.log(`| \`${j.name}\` | \`${j.schedule}\` |`);
   }
 } else if (cmd === "install") {
   const targets = REGISTRY.filter(pick).filter((s) => (all || onlyArg ? true : !s.optIn) && !s.install.startsWith("#"));
