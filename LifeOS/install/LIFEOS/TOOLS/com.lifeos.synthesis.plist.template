@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  com.lifeos.synthesis.plist.template - Source template. Install via:
+    bun ~/.claude/LIFEOS/TOOLS/InstallSynthesis.ts
+  Runs LearningPatternSynthesis.ts --week weekly, Monday 03:05 (plus once at
+  load): the 7-day ratings synthesis into MEMORY/LEARNING/SYNTHESIS/. Weekly,
+  not daily, because --week is a trailing 7-day window - a daily run writes
+  seven overlapping reports of the same week. 03:05 keeps the 5-min offset from
+  com.lifeos.deriver (03:00) chosen at Algorithm v6.6.0. The installer
+  substitutes placeholders, writes the materialized plist to
+  ~/Library/LaunchAgents/, and bootstraps it with launchctl. This template
+  stays clean of principal-specific paths so it ships in the public release.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.lifeos.synthesis</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{BUN}}</string>
+    <string>{{HOME}}/.claude/LIFEOS/TOOLS/LearningPatternSynthesis.ts</string>
+    <string>--week</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>3</integer>
+    <key>Minute</key>
+    <integer>5</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>{{HOME}}/.claude/LIFEOS/MEMORY/OBSERVABILITY/synthesis.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{HOME}}/.claude/LIFEOS/MEMORY/OBSERVABILITY/synthesis.log</string>
+  <key>WorkingDirectory</key>
+  <string>{{HOME}}/.claude</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>{{BUN_DIR}}:{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>{{HOME}}</string>
+  </dict>
+</dict>
+</plist>

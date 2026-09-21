@@ -32,6 +32,7 @@
  *
  *   StartInterval N + RunAtLoad   → .timer  OnBootSec=2min, OnUnitActiveSec=N
  *   StartCalendarInterval H:M     → .timer  OnCalendar=*-*-* H:M:00
+ *   StartCalendarInterval W H:M   → .timer  OnCalendar=Mon *-*-* H:M:00
  *   KeepAlive + ThrottleInterval  → .service Restart=always, RestartSec=N
  *   WatchPaths [dirs]             → .path   PathModified= per directory
  *
@@ -59,8 +60,11 @@ export const UNIT_DIR = join(HOME, ".config", "systemd", "user");
 export type Schedule =
   /** launchd StartInterval — every N seconds, plus a run shortly after boot. */
   | { kind: "interval"; seconds: number }
-  /** launchd StartCalendarInterval — daily at a wall-clock time. */
-  | { kind: "calendar"; hour: number; minute: number }
+  /**
+   * launchd StartCalendarInterval — daily at a wall-clock time. `weekday` is
+   * launchd's Weekday (0 = Sunday) for a weekly job.
+   */
+  | { kind: "calendar"; weekday?: number; hour: number; minute: number }
   /** launchd KeepAlive — a long-running process systemd should keep alive. */
   | { kind: "daemon"; restartSec: number }
   /** launchd WatchPaths — re-run when any of these directories changes. */
@@ -155,6 +159,8 @@ export function renderService(spec: UnitSpec): string {
   return lines.join("\n") + "\n";
 }
 
+const SYSTEMD_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export function renderTimer(spec: UnitSpec): string | null {
   const s = spec.schedule;
   if (s.kind !== "interval" && s.kind !== "calendar") return null;
@@ -171,7 +177,8 @@ export function renderTimer(spec: UnitSpec): string | null {
     // the same instant the timer is enabled.
     lines.push("OnBootSec=2min", `OnUnitActiveSec=${s.seconds}s`);
   } else {
-    lines.push(`OnCalendar=*-*-* ${String(s.hour).padStart(2, "0")}:${String(s.minute).padStart(2, "0")}:00`);
+    const day = s.weekday === undefined ? "" : `${SYSTEMD_WEEKDAYS[s.weekday % 7]} `;
+    lines.push(`OnCalendar=${day}*-*-* ${String(s.hour).padStart(2, "0")}:${String(s.minute).padStart(2, "0")}:00`);
   }
   lines.push("Persistent=true", "", "[Install]", "WantedBy=timers.target");
   return lines.join("\n") + "\n";
