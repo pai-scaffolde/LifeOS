@@ -9,8 +9,8 @@
  *   bun LIFEOS/TOOLS/DAInterview.ts --depth deep       # All phases
  *   bun LIFEOS/TOOLS/DAInterview.ts --update           # Update primary DA
  *
- * Operates ONLY on the primary DA (USER/DIGITAL_ASSISTANT/). Worker DAs in
- * USER/LIFEOS_WORKERS/ are not touched by this tool.
+ * Operates ONLY on the primary DA (USER/DIGITAL_ASSISTANT/). Worker DAs are
+ * not touched by this tool.
  *
  * Creates:
  *   LIFEOS/USER/DIGITAL_ASSISTANT/DA_IDENTITY.md     (single file: YAML frontmatter + prose body)
@@ -18,26 +18,28 @@
  *   LIFEOS/USER/DIGITAL_ASSISTANT/opinions.yaml
  *   LIFEOS/USER/DIGITAL_ASSISTANT/diary.jsonl
  *
- * Reads roster scaffolding (presets) from:
- *   LIFEOS/USER/LIFEOS_WORKERS/_presets.yaml
+ * Reads roster scaffolding (presets, registry) from the same directory:
+ *   LIFEOS/USER/DIGITAL_ASSISTANT/_presets.yaml
+ *   LIFEOS/USER/DIGITAL_ASSISTANT/_registry.yaml
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { parseDocument } from "yaml";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 // Resolve relative to this script's own location. Script ships at
 // LIFEOS/TOOLS/DAInterview.ts. This tool is primary-DA-only; the primary lives at
 // USER/DIGITAL_ASSISTANT/ (flat — files live at the dir root, not in a name
-// subdir). Worker DAs in USER/LIFEOS_WORKERS/ are out of scope. Roster scaffolding
-// (presets/registry) lives at USER/LIFEOS_WORKERS/.
+// subdir). Worker DAs are out of scope. Roster scaffolding (presets/registry) ships
+// in the same flat directory (see the install scaffold's DIGITAL_ASSISTANT/README.md).
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LIFEOS_DIR = join(SCRIPT_DIR, "..");
 const DA_DIR = join(LIFEOS_DIR, "USER/DIGITAL_ASSISTANT");
-const PRESETS_PATH = join(LIFEOS_DIR, "USER/LIFEOS_WORKERS/_presets.yaml");
-const REGISTRY_PATH = join(LIFEOS_DIR, "USER/LIFEOS_WORKERS/_registry.yaml");
+const PRESETS_PATH = join(DA_DIR, "_presets.yaml");
+const REGISTRY_PATH = join(DA_DIR, "_registry.yaml");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -171,9 +173,22 @@ function ask(question: string, defaultValue?: string): string {
   return answer.trim();
 }
 
+// prompt() returns null for a blank Enter as well as for stdin EOF (Bun 1.4.2).
+// On a TTY a null is the user's own keypress. On a pipe or file, a null at a
+// prompt that has no default and would only be re-asked is EOF: exit instead
+// of re-asking forever. Nothing has been written at any prompt.
+function exitIfStdinClosed(raw: string | null): void {
+  if (raw !== null || process.stdin.isTTY) return;
+  println();
+  println("  Input closed (stdin EOF) before the interview finished. Nothing was written.");
+  process.exit(1);
+}
+
 function askRequired(question: string): string {
   while (true) {
-    const answer = ask(question);
+    const raw = prompt(`${question}:`);
+    exitIfStdinClosed(raw);
+    const answer = raw?.trim() ?? "";
     if (answer !== "") return answer;
     println("  This one's required. Try again.");
   }
@@ -186,6 +201,7 @@ function askNumber(question: string, min: number, max: number, defaultValue?: nu
     if ((raw === null || raw.trim() === "") && defaultValue !== undefined) {
       return defaultValue;
     }
+    exitIfStdinClosed(raw);
     const num = parseInt(raw ?? "", 10);
     if (!isNaN(num) && num >= min && num <= max) return num;
     println(`  Please enter a number between ${min} and ${max}.`);
@@ -200,6 +216,7 @@ function askChoice(question: string, options: string[], descriptions?: string[])
   }
   while (true) {
     const raw = prompt(`Choose (1-${options.length}):`);
+    exitIfStdinClosed(raw);
     const num = parseInt(raw ?? "", 10);
     if (!isNaN(num) && num >= 1 && num <= options.length) {
       return options[num - 1];
@@ -364,24 +381,23 @@ function generateIdentityFile(data: InterviewData): string {
   return `---\n${generateFrontmatterYaml(data)}---\n\n${generateBodyMarkdown(data)}`;
 }
 
+// Writing style mapping
+function writingStyleDescription(style: string | undefined): string {
+  switch (style) {
+    case "concise":
+      return "Short, punchy, to the point. No filler.";
+    case "detailed":
+      return "Thorough explanations with full context. Comprehensive but organized.";
+    case "conversational":
+      return "Natural flow, like chatting with a smart colleague. Enthusiastic but not excessive.";
+    default:
+      return "Natural flow, like chatting with a smart colleague. Enthusiastic but not excessive.";
+  }
+}
+
 function generateFrontmatterYaml(data: InterviewData): string {
   const today = new Date().toISOString().split("T")[0];
-
-  // Writing style mapping
-  let writingDesc: string;
-  switch (data.writingStyle) {
-    case "concise":
-      writingDesc = "Short, punchy, to the point. No filler.";
-      break;
-    case "detailed":
-      writingDesc = "Thorough explanations with full context. Comprehensive but organized.";
-      break;
-    case "conversational":
-      writingDesc = "Natural flow, like chatting with a smart colleague. Enthusiastic but not excessive.";
-      break;
-    default:
-      writingDesc = "Natural flow, like chatting with a smart colleague. Enthusiastic but not excessive.";
-  }
+  const writingDesc = writingStyleDescription(data.writingStyle);
 
   // Relationship dynamic mapping
   let dynamicDesc: string;
@@ -521,6 +537,52 @@ ${growthBlock}
 
 function escYaml(s: string): string {
   return s.replace(/"/g, '\\"').replace(/\n/g, " ");
+}
+
+// --update: patch only the keys the interview actually asked about into the
+// existing file. Other writers (the growth engine's growth.*/writing.avoid/
+// writing.prefer, the pai-freshness header, core.role, MemoryWriter's body
+// sections) own the rest, so every other key and the prose body pass through
+// verbatim. Regenerating the whole file from the interview's own template is
+// what destroyed them.
+function updateIdentityFile(existingContent: string, data: InterviewData): string {
+  const fmEnd = existingContent.indexOf("\n---\n", 4);
+  const doc = parseDocument(existingContent.slice(4, fmEnd));
+  if (doc.errors.length) {
+    throw new Error(`DA_IDENTITY.md frontmatter parse error: ${doc.errors[0].message}`);
+  }
+  const set = (path: string[], value: unknown) => doc.setIn(path, value);
+
+  if (data.daName !== doc.getIn(["core", "name"])) {
+    set(["core", "name"], data.daName);
+    set(["core", "full_name"], data.daFullName);
+    set(["core", "display_name"], data.displayName);
+  }
+  if (data.principalName) set(["relationship", "principal"], data.principalName);
+  set(["personality", "preset"], data.presetKey);
+  set(["personality", "traits"], { ...data.traits });
+
+  if (data.personalityDescription !== undefined) {
+    set(["personality", "base_description"], data.personalityDescription);
+  }
+  if (data.mustAsk !== undefined) set(["autonomy", "must_ask"], [...data.mustAsk]);
+  if (data.writingStyle !== undefined) {
+    set(["writing", "style"], writingStyleDescription(data.writingStyle));
+  }
+
+  if (data.relationshipDynamic !== undefined) {
+    set(["relationship", "dynamic"], data.relationshipDynamic);
+  }
+  if (data.companionName) {
+    set(["companion", "name"], data.companionName);
+    set(["companion", "species"], data.companionSpecies ?? "Cat");
+    set(["companion", "personality"], data.companionPersonality ?? "Playful and curious");
+  }
+  if (data.initialBeliefs !== undefined) {
+    set(["growth", "initial_beliefs"], data.initialBeliefs.map((b) => ({ ...b, confidence: 0.5 })));
+  }
+
+  return `---\n${doc.toString().replace(/\n$/, "")}${existingContent.slice(fmEnd)}`;
 }
 
 // ── Markdown Body Generation (lives below the YAML frontmatter) ─────────────
@@ -683,18 +745,24 @@ function loadExistingIdentity(daDir: string): Partial<InterviewData> | null {
   const content = fullContent.slice(4, fmEnd);
   const data: Partial<InterviewData> = {};
 
-  // Parse key fields from frontmatter
-  const nameMatch = content.match(/^\s+name:\s*"(.+)"/m);
-  if (nameMatch) data.daName = nameMatch[1];
+  // Parse key fields from frontmatter. Scalars may be quoted ("Nova") or
+  // bare (Nova, or Nova (growth)) -- the growth engine emits the bare form.
+  const scalar = (key: string): string | undefined => {
+    const m = content.match(new RegExp(`^\\s+${key}:\\s*(?:"(.+)"|(.+?))\\s*$`, "m"));
+    return m ? (m[1] ?? m[2]) : undefined;
+  };
 
-  const fullNameMatch = content.match(/^\s+full_name:\s*"(.+)"/m);
-  if (fullNameMatch) data.daFullName = fullNameMatch[1];
+  const name = scalar("name");
+  if (name) data.daName = name;
 
-  const displayMatch = content.match(/^\s+display_name:\s*"(.+)"/m);
-  if (displayMatch) data.displayName = displayMatch[1];
+  const fullName = scalar("full_name");
+  if (fullName) data.daFullName = fullName;
 
-  const principalMatch = content.match(/^\s+principal:\s*"(.+)"/m);
-  if (principalMatch) data.principalName = principalMatch[1];
+  const displayName = scalar("display_name");
+  if (displayName) data.displayName = displayName;
+
+  const principal = scalar("principal");
+  if (principal) data.principalName = principal;
 
   const presetMatch = content.match(/^\s+preset:\s*(\w+)/m);
   if (presetMatch) data.presetKey = presetMatch[1];
@@ -790,7 +858,7 @@ function main(): void {
       process.exit(1);
     }
 
-    const daDir = join(DA_DIR, daToUpdate);
+    const daDir = DA_DIR;
     const existing = loadExistingIdentity(daDir);
 
     if (!existing) {
@@ -826,16 +894,21 @@ function main(): void {
 
   // Generate files
   const slug = data.daName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const daDir = join(DA_DIR, slug);
+  const daDir = DA_DIR;
 
   // Create directory
   if (!existsSync(daDir)) {
     mkdirSync(daDir, { recursive: true });
   }
 
-  // Write DA_IDENTITY.md (single file: YAML frontmatter + prose body)
-  const identityContent = generateIdentityFile(data);
-  writeFileSync(join(daDir, "DA_IDENTITY.md"), identityContent);
+  // Write DA_IDENTITY.md (single file: YAML frontmatter + prose body).
+  // --update patches the interview's own keys into the existing file so every
+  // other writer's data survives; only a fresh DA gets the generated template.
+  const identityPath = join(daDir, "DA_IDENTITY.md");
+  const identityContent = update
+    ? updateIdentityFile(readFileSync(identityPath, "utf-8"), data)
+    : generateIdentityFile(data);
+  writeFileSync(identityPath, identityContent);
 
   // Create empty growth files if they don't exist
   const emptyFiles = ["growth.jsonl", "diary.jsonl"];
