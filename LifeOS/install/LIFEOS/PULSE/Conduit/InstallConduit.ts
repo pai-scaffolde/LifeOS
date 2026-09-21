@@ -20,7 +20,10 @@ const LABEL = "com.lifeos.conduit"
 const PLIST = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`)
 const CONDUIT = join(import.meta.dir, "conduit.ts")
 const LOG_DIR = join(DATA_ROOT, "logs")
-const BUN = process.execPath // the bun binary currently running
+// `process.execPath` resolves through the symlink to a version-pinned install
+// path (Homebrew's Cellar/bun/<version>/bin/bun), which dies on the next bun
+// upgrade and leaves the job unable to launch. Prefer the stable name on PATH.
+const BUN = Bun.which("bun") ?? process.execPath
 
 /** Escape a string for safe interpolation into a plist XML <string> value. */
 function escapeXml(s: string): string {
@@ -97,7 +100,7 @@ async function linuxSpec(): Promise<systemd.UnitSpec> {
   return {
     label: LABEL,
     description: "LifeOS Conduit capture",
-    // BUN is process.execPath, already absolute — no `which` lookup needed.
+    // BUN is already absolute — resolved once at module load.
     exec: [BUN, CONDUIT, "capture"],
     logPath: join(LOG_DIR, "conduit.out.log"),
     errLogPath: join(LOG_DIR, "conduit.err.log"),

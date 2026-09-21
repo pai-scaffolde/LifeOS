@@ -39,7 +39,10 @@ if (process.argv.includes("--uninstall")) {
   process.exit(0);
 }
 
-const bunBin = process.execPath;
+// `process.execPath` resolves through the symlink to a version-pinned install
+// path (Homebrew's Cellar/bun/<version>/bin/bun), which dies on the next bun
+// upgrade and leaves the job unable to launch. Prefer the stable name on PATH.
+const bunBin = Bun.which("bun") ?? process.execPath;
 const plist = readFileSync(TEMPLATE, "utf8")
   .replaceAll("{{BUN}}", bunBin)
   .replaceAll("{{BUN_DIR}}", dirname(bunBin))

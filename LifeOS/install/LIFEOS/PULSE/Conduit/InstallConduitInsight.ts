@@ -21,7 +21,10 @@ const LABEL = "com.lifeos.conduit.insight"
 const PLIST = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`)
 const BUILD_INSIGHT = join(import.meta.dir, "BuildInsight.ts")
 const LOG_DIR = join(DATA_ROOT, "logs")
-const BUN = process.execPath
+// `process.execPath` resolves through the symlink to a version-pinned install
+// path (Homebrew's Cellar/bun/<version>/bin/bun), which dies on the next bun
+// upgrade and leaves the job unable to launch. Prefer the stable name on PATH.
+const BUN = Bun.which("bun") ?? process.execPath
 const INTERVAL_SEC = 3600 // hourly
 
 function escapeXml(s: string): string {
@@ -112,7 +115,7 @@ async function linuxSpec(): Promise<systemd.UnitSpec> {
   return {
     label: LABEL,
     description: "LifeOS Conduit insight build",
-    // BUN is process.execPath, already absolute — no `which` lookup needed.
+    // BUN is already absolute — resolved once at module load.
     exec: [BUN, BUILD_INSIGHT],
     logPath: join(LOG_DIR, "conduit-insight.out.log"),
     errLogPath: join(LOG_DIR, "conduit-insight.err.log"),
