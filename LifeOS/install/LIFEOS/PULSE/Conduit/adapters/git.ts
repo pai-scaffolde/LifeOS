@@ -1,6 +1,11 @@
 /**
  * git-commit adapter — new commits across configured repos since the last poll.
  *
+ * The cursor is per-repo HEAD SHA (`git log <lastHead>..HEAD`), not wall-clock: commits
+ * arrive by pull minutes-to-hours after their author date, so a `--since=<last poll>`
+ * window missed nearly all of them. `--since` is only the fallback for a repo with no
+ * recorded head, or whose recorded head is no longer reachable (rewritten history).
+ *
  * execFile (no shell). Each repo is isolated in its own try/catch so one bad path
  * never blocks the others. Commits carry their author-date as the event timestamp,
  * so they file under the day they were actually made.
@@ -19,16 +24,34 @@ export function capture(config: ConduitConfig): ConduitEvent[] {
   const since =
     (state.lastGitPollTs as string) ||
     new Date(Date.now() - config.pollIntervalSec * 2000).toISOString();
+  const heads = { ...((state.gitHeads as Record<string, string> | undefined) ?? {}) };
   const events: ConduitEvent[] = [];
   let allOk = true;
 
   for (const repo of config.repos) {
     try {
-      const out = execFileSync(
-        "git",
-        ["-C", repo, "log", `--since=${since}`, "--no-merges", `--pretty=format:%H${UNIT}%s${UNIT}%aI`],
-        { encoding: "utf8", timeout: 8000 },
-      ).trim();
+      const git = (...args: string[]) =>
+        execFileSync("git", ["-C", repo, ...args], {
+          encoding: "utf8",
+          timeout: 8000,
+          stdio: ["ignore", "pipe", "ignore"], // an unreachable cursor probe is expected, not log noise
+        }).trim();
+      // Resolve HEAD first, then log up to that SHA, so a commit landing mid-poll is
+      // never recorded as seen before it was scanned.
+      const head = git("rev-parse", "HEAD");
+      const last = heads[repo];
+      let reachable = false;
+      if (last) {
+        try {
+          git("cat-file", "-e", `${last}^{commit}`);
+          reachable = true;
+        } catch {
+          // recorded head gone (history rewritten) — fall back to the time window
+        }
+      }
+      const range = reachable ? [`${last}..${head}`] : [`--since=${since}`, head];
+      const out = git("log", ...range, "--no-merges", `--pretty=format:%H${UNIT}%s${UNIT}%aI`);
+      heads[repo] = head;
       if (!out) continue;
       for (const line of out.split("\n")) {
         const [sha, subject, authorDate] = line.split(UNIT);
@@ -46,8 +69,8 @@ export function capture(config: ConduitConfig): ConduitEvent[] {
     }
   }
 
-  // Only advance the cursor when EVERY repo scanned cleanly, so a transient failure never
+  // Only advance the cursors when EVERY repo scanned cleanly, so a transient failure never
   // skips commits in the un-scanned window. The re-scan overlap is de-duped by SHA at rollup.
-  if (allOk) writeState({ lastGitPollTs: new Date().toISOString() });
+  if (allOk) writeState({ gitHeads: heads, lastGitPollTs: new Date().toISOString() });
   return events;
 }

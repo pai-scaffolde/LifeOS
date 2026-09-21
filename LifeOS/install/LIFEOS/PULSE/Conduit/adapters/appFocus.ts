@@ -30,17 +30,17 @@ const FRONT_APP_SCRIPT =
 
 /** One line per process, not per poll — a 2-minute cron would drown the log. */
 let warned = false;
-function warnOnce(reason: string): void {
+function warnOnce(message: string): void {
   if (warned) return;
   warned = true;
-  console.warn(
-    `[conduit:appFocus] disabled — ${reason}. No app-focus events will be captured; rollup falls back to session-derived time.`,
-  );
+  console.warn(`[conduit:appFocus] ${message}`);
 }
 
 export function capture(config: ConduitConfig): ConduitEvent[] {
   if (platform() !== "darwin") {
-    warnOnce(`app-focus requires macOS \`osascript\`, host is ${platform()}`);
+    warnOnce(
+      `disabled — app-focus requires macOS \`osascript\`, host is ${platform()}. No app-focus events will be captured; rollup falls back to session-derived time.`,
+    );
     return [];
   }
   try {
@@ -61,10 +61,16 @@ export function capture(config: ConduitConfig): ConduitEvent[] {
       },
     ];
   } catch (err) {
-    // On macOS a throw here is a real fault (Automation permission not granted,
-    // System Events unresponsive) — not an expected platform gap, so it is worth
-    // saying out loud exactly once.
-    warnOnce(`osascript failed: ${String((err as Error)?.message ?? err).slice(0, 120)}`);
+    // Worth saying out loud once, but do NOT say "disabled": this process is one
+    // poll, the next poll retries, and the commonest cause is the machine being
+    // in darkwake — System Events has no frontmost application to report, so the
+    // query hangs to the timeout. 38 consecutive polls read this way across one
+    // sleep window and the log claimed app-focus had been switched off. A missed
+    // poll costs one interval of focus time; rollup already labels a day with no
+    // focus events as session-derived.
+    warnOnce(
+      `no app-focus this poll — osascript failed: ${String((err as Error)?.message ?? err).slice(0, 120)}. Retrying on the next poll; expected while the machine is asleep or in darkwake.`,
+    );
     return [];
   }
 }
