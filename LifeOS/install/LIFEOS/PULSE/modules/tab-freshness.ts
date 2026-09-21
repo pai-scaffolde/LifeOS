@@ -76,7 +76,8 @@ const REGISTRY: Record<string, SourceSpec[]> = {
     { name: "BUSINESS/", path: join(USER_DIR, "BUSINESS"), expand: true },
   ],
   local: [
-    { name: "LOCAL/", path: join(USER_DIR, "LOCAL"), expand: true },
+    // The digest modules/local-intelligence.ts serves — USER/LOCAL/ never existed.
+    { name: "LocalIntelligence/latest.json", path: join(USER_DIR, "CUSTOMIZATIONS", "SKILLS", "LocalIntelligence", "latest.json") },
     { name: "PRINCIPAL_IDENTITY.md", path: join(USER_DIR, "PRINCIPAL", "PRINCIPAL_IDENTITY.md") },
   ],
   knowledge: [
@@ -115,7 +116,7 @@ const REGISTRY: Record<string, SourceSpec[]> = {
     { name: "_X/State/", path: join(HOME, ".claude", "skills", "_X", "State") },
   ],
   ledger: [
-    { name: "SYSTEMUPDATES/index.json", path: join(LIFEOS_DIR, "MEMORY", "SYSTEMUPDATES", "index.json") },
+    { name: "SYSTEMUPDATES/INDEX.md", path: join(LIFEOS_DIR, "MEMORY", "SYSTEMUPDATES", "INDEX.md") },
     { name: "SYSTEMUPDATES/deploys.jsonl", path: join(LIFEOS_DIR, "MEMORY", "SYSTEMUPDATES", "deploys.jsonl") },
     { name: "VERSION", path: join(LIFEOS_DIR, "VERSION") },
     { name: "STATE/integrity/", path: join(LIFEOS_DIR, "MEMORY", "STATE", "integrity"), expand: true },

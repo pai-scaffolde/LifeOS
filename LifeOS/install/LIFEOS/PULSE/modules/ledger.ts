@@ -3,7 +3,8 @@
  *
  * Composes from local files, each probe fail-soft:
  *   versions  — LIFEOS/VERSION (umbrella) + ALGORITHM/LATEST + system-prompt/memory markers
- *   registry  — MEMORY/SYSTEMUPDATES/index.json (latest N entries + rollups)
+ *   registry  — MEMORY/SYSTEMUPDATES/INDEX.md (latest N entries + rollups; the file
+ *               TOOLS/CreateUpdate.ts maintains — one "ts | title | significance | type" row per update)
  *   deploys   — MEMORY/SYSTEMUPDATES/deploys.jsonl (estate deploy events)
  *   integrity — MEMORY/STATE/integrity/last-run.json + last-pass.json
  *   drift     — MEMORY/STATE/version-drift-nag.json
@@ -65,6 +66,30 @@ function readJsonl(path: string, lastN: number): any[] {
   return out.reverse();
 }
 
+/**
+ * Parse the SYSTEMUPDATES/INDEX.md registry CreateUpdate.ts writes: newest-first rows of
+ * `<iso ts> | <title> | <significance> | <change_type>` plus a `**Total:** N updates` footer.
+ * Returns null when the file is absent (nothing recorded yet — not an error) and
+ * `{ rows: [] }` when it exists but no row parses (unparseable — an error).
+ */
+function readIndexMd(path: string): { rows: { timestamp: string; title: string; significance: string; change_type: string }[]; total: number | null } | null {
+  const raw = readText(path);
+  if (raw === null) return null;
+  const rows: { timestamp: string; title: string; significance: string; change_type: string }[] = [];
+  for (const line of raw.split("\n")) {
+    const m = line.match(/^(\S+) \| (.+?) \| (\w+) \| (\w+)$/);
+    if (m) rows.push({ timestamp: m[1], title: m[2], significance: m[3], change_type: m[4] });
+  }
+  const total = raw.match(/\*\*Total:\*\* (\d+) updates/);
+  return { rows, total: total ? Number(total[1]) : null };
+}
+
+function tally(rows: { [k: string]: string }[], key: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r[key]] = (out[r[key]] ?? 0) + 1;
+  return out;
+}
+
 /** Frontmatter `version:` marker from a markdown file (system prompt, memory doc). */
 function frontmatterVersion(path: string): string | null {
   const raw = readText(path);
@@ -84,27 +109,19 @@ function compose(): any {
   if (!versions.lifeos) errors.push("VERSION unreadable");
 
   let registry: any = null;
-  const idx = readJson(join(SYSTEMUPDATES, "index.json"));
-  if (idx) {
+  const idx = readIndexMd(join(SYSTEMUPDATES, "INDEX.md"));
+  if (idx && idx.rows.length) {
     registry = {
-      last_updated: idx.last_updated ?? null,
-      total_updates: idx.total_updates ?? null,
-      by_significance: idx.by_significance ?? null,
-      by_change_type: idx.by_change_type ?? null,
-      recent: Array.isArray(idx.updates)
-        ? idx.updates.slice(0, REGISTRY_SLICE).map((u: any) => ({
-            timestamp: u.timestamp,
-            title: u.title,
-            significance: u.significance ?? u.impact ?? null,
-            change_type: u.change_type ?? u.type ?? null,
-            version: u.version ?? null,
-            files: Array.isArray(u.files_affected) ? u.files_affected.length : 0,
-          }))
-        : [],
+      last_updated: idx.rows[0].timestamp,
+      total_updates: idx.total ?? idx.rows.length,
+      by_significance: tally(idx.rows, "significance"),
+      by_change_type: tally(idx.rows, "change_type"),
+      recent: idx.rows.slice(0, REGISTRY_SLICE).map((u) => ({ ...u, version: null, files: 0 })),
     };
-  } else {
-    errors.push("SYSTEMUPDATES/index.json unreadable");
+  } else if (idx) {
+    errors.push("SYSTEMUPDATES/INDEX.md unparseable");
   }
+  // absent INDEX.md → registry null with no error: nothing has been recorded yet
 
   const deploys = readJsonl(join(SYSTEMUPDATES, "deploys.jsonl"), DEPLOYS_SLICE);
 
