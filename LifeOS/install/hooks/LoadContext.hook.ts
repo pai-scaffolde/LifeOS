@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 /**
- * @version 1.6.31
+ * @version 1.6.32
  * LoadContext.hook.ts - Inject LifeOS dynamic context into Claude's Context (SessionStart)
  *
  * LifeOS v5.0 Context Architecture:
- * - Constitutional rules     → LIFEOS/LIFEOS_SYSTEM_PROMPT.md (system prompt via --append-system-prompt-file)
+ * - Constitutional rules     → LIFEOS/LIFEOS_SYSTEM_PROMPT.md (system prompt via --append-system-prompt-file;
+ *                              Agent SDK sessions drop that flag, so this hook tells them to Read the file first)
  * - Operational procedures   → CLAUDE.md (loaded natively by Claude Code)
  * - Contextual knowledge     → @imports in CLAUDE.md (native Claude Code mechanism, v5.0)
  * - Dynamic context          → this hook (relationship, learning, work)
@@ -46,6 +47,7 @@ import { recordSessionStart } from './lib/notifications';
 import { loadWisdomFrames } from './lib/learning-readback';
 import { loadAdvisoryDigest } from './lib/advisory-readback';
 import { isSubagentContext } from './lib/subagent';
+import { readHookInput } from './lib/hook-io';
 import { isDesktopChannel, getNotificationChannel } from './lib/notification-channel';
 import { PHASE_TO_ASCENT } from '../LIFEOS/TOOLS/ascent';
 
@@ -477,6 +479,30 @@ async function main() {
     // timing that reads this is not the thing being withheld below.
     recordSessionStart();
     console.error('⏱️ Session start time recorded');
+
+    // Constitutional layer for Agent SDK launches (T3 Code and other SDK hosts).
+    // The SDK sends its own `systemPrompt.append` as `appendSystemPrompt` in the
+    // stream-json initialize request, and the CLI lets that replace the value
+    // from `--append-system-prompt-file`, so the flag in the host's launch args
+    // is silently dropped. Only the `lifeos` launcher (CLI entrypoint) reliably
+    // carries the file, so SDK sessions are pointed at it here. Hook stdout past
+    // the harness cap is swapped for a truncated preview, so the file is not
+    // inlined; the session is told to Read it instead. Runs before the channel
+    // gate: the constitution is not private context, and SDK hosts often look
+    // headless. Not on resume: the transcript already holds it. Compact drops
+    // hook context, so it is re-issued then.
+    const entrypoint = process.env.CLAUDE_CODE_ENTRYPOINT ?? '';
+    if (entrypoint.startsWith('sdk')) {
+      const hookInput = await readHookInput();
+      const startSource = (hookInput as { source?: unknown } | null)?.source;
+      const systemPromptFile = join(paiDir, 'LIFEOS_SYSTEM_PROMPT.md');
+      if (startSource !== 'resume' && existsSync(systemPromptFile)) {
+        console.log(`<system-reminder>
+LifeOS constitutional layer NOT loaded: this ${entrypoint} session's host replaced --append-system-prompt-file. Your first action this session, before any other tool call or reply, is one Read tool call on ${systemPromptFile} with no offset or limit (not grep, not sed: the whole file). It carries system-prompt authority; follow it exactly for the rest of the session.
+</system-reminder>`);
+        console.error(`📜 Directed ${entrypoint} session to load the constitutional layer`);
+      }
+    }
 
     // Remote-channel sessions (iMessage, etc. — see lib/notification-channel.ts)
     // serve someone through a bot surface. Injecting the principal's
