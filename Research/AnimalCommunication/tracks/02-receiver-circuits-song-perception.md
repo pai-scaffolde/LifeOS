@@ -63,13 +63,13 @@ In males, Zhou et al. 2015 used calcium imaging to show that third-order vPN1 ne
 
 ### Stage 5 -- descending reply neurons and the mating-state gate
 
-Female vaginal plate opening (VPO), the acceptance act, is controlled by a pair of female-specific descending neurons (vpoDNs). vpoDNs receive excitatory input from auditory vpoEN neurons, which are tuned to features of *D. melanogaster* song, and from pC1 neurons, which encode mating status. The synaptic connections were confirmed in EM connectome data [HIGH][12]. The evidence combines imaging, optogenetics and EM connectivity. After mating, vpoDN song responses are attenuated but vpoEN responses are not, and pC1 neurons mediate this change. For VPO, the key mating-status gate therefore sits where vpoDN integrates song and state [HIGH][12]. That does not exclude state-dependent modulation elsewhere in the auditory pathway, such as the JON dopamine result [MED][5].
+Female vaginal plate opening (VPO), the acceptance act, is controlled by a pair of female-specific descending neurons (vpoDNs). vpoDNs receive excitatory input from auditory vpoEN neurons, which are tuned to features of *D. melanogaster* song, and from pC1 neurons, which encode mating status. The paper reports EM connectivity for these inputs (dataset unconfirmed; Track 03's audit could not see it) [MED][12]. The evidence combines imaging, optogenetics and EM connectivity. After mating, vpoDN song responses are attenuated but vpoEN responses are not, and pC1 neurons mediate this change. For VPO, the key mating-status gate therefore sits where vpoDN integrates song and state [HIGH][12]. That does not exclude state-dependent modulation elsewhere in the auditory pathway, such as the JON dopamine result [MED][5].
 
 DNp13 descending neurons are command-type neurons for ovipositor extrusion (OE). They respond to male song through direct synaptic input from pC2l auditory neurons. Mating status does not change DNp13 song responses; it changes how effectively they engage OE motor circuits, via ppk+ uterine sensory neurons activated by ovulation [HIGH][16]. The search results describe the pC2l input as about 20 Dsx+ cholinergic cells per hemisphere. Male song is more likely to evoke VPO in virgin females and OE in recently mated females [MED][16].
 
 **What OE means is disputed.** Wang et al. treat OE as a rejection behavior in mated females [MED][16], and the live results show that they also report OE to be an effective deterrent only when performed by previously mated females. The companion paper by Mezzera et al. reports that OE is shown only by sexually mature females, only during courtship, and in response to male song. OE promotes male copulation attempts in both virgin and mated females and signals acceptance in virgins [HIGH][17]. Both readings rest on behavioral evidence. The audit confirmed the Mezzera findings separately; in checking the dispute itself, only the Wang et al. side was searched.
 
-State signals also reach the brain from the body. A 2025 annotation of the female FlyWire brain connectome identified putative Fruitless and Doublesex neuron types by matching morphology to light-microscopy data, and characterized their connectivity [MED][18]. The reported counts (1,278 Fru, 50 Dsx, 79 ambiguous) are unverified. The search results give "91 Fru/Dsx types comprising over 1400 neurons", consistent with the 1,407 total, but not the breakdown. They also report that Fru/Dsx neurons are highly interconnected yet receive most of their input from non-Fru/Dsx neurons, and that the labels are available in FlyWire Codex. That SAG ascending neurons relay post-mating (sex-peptide) information to pC1 was established earlier by functional work (Feng et al. 2014, Neuron; Wang F et al. 2020, Nature) [MED][18]. The audit did not check that attribution.
+State signals also reach the brain from the body. A 2025 annotation of the female FlyWire brain connectome identified putative Fruitless and Doublesex neuron types by matching morphology to light-microscopy data, and characterized their connectivity [MED][18]. The reported counts (1,278 Fru, 50 Dsx, 79 ambiguous) are unverified. The search results give "91 Fru/Dsx types comprising over 1400 neurons", consistent with the 1,407 total, but not the breakdown. They also report that Fru/Dsx neurons are highly interconnected yet receive most of their input from non-Fru/Dsx neurons, and that the labels are available in FlyWire Codex. SAG ascending neurons carry mating status to the brain (Feng et al. 2014, Neuron 83:135-148); the SAG-to-pC1 connection was shown later by EM connectomics in Wang F et al. 2020, Nature 579:101-105 (Track 03 [21][22], where the live audit confirmed it) [MED][18].
 
 ### Timescale: song is judged over seconds
 
@@ -122,7 +122,7 @@ The connectome also revises the 2015 male pathway: vPN1 is GABAergic, and the an
 | vpoDN | VPO; song responses attenuated after mating | Female | Recorded activity + manipulation + wiring | HIGH | 12 |
 | DNp13 | OE command; pC2l input; mating gates output, not song response | Female | Recorded activity + manipulation + wiring | HIGH | 16 |
 | ppk+ uterine neurons | Ovulation signal gating DNp13 output | Female | Part of the DNp13 study | HIGH | 16 |
-| SAG ascending neurons | Post-mating state to pC1 | Female | Earlier functional work; annotation | MED | 18 |
+| SAG ascending neurons | Post-mating state to pC1 | Female | Earlier functional and EM work; annotation | MED | 18 |
 | DNp55, pC1_6a | vpoEN partners (shared; male-specific) | Both; male | Wiring only | MED | 23 |
 | Male ascending neurons | Song generators to song detectors | Male | Wiring only | MED | 23 |
 
@@ -145,8 +145,8 @@ The connectome also revises the 2015 male pathway: vPN1 is GABAergic, and the an
 - **How does sharp IPI selectivity arise?** The authors of [9] report that cell-type responses are predictable from their inputs. Whether a connectome-constrained model reproduces each type's IPI tuning from wiring alone, in a network with no hierarchy, is untested.
 - **Which node diverged between species?** B1 preferences differ too little to account for the behavioral difference [22]; candidates downstream include vpoEN and pC1. Comparisons beyond *D. simulans* are missing.
 - **Can activity be matched to connectome cell types in the same animal?** Most whole-brain activity [1] is assigned to regions, not cell types. Sex-shared types (B1, pC2, vpoEN) have not been confirmed as matched across the female and male connectomes (Track 04).
-- **Which inputs were not covered?** Gaps include female copulation song, other males' song, substrate vibration, aggression song, near-field escape, sound localization between the two antennae, and sine-specific processing. Round-1 verifiers named Kerwin et al. 2020, Versteven et al. 2017 and Batchelor & Wilson 2019 (Track 03); the live audit did not check these.
-- **How does the receiver shape the sender?** Male song depends on female movement and distance, and males switch between two pulse types, Pfast and Pslow. How female neurons respond to each type is untested here. This loop is the closest fly analogue to a conversation. Round-1 verifiers named Coen et al. 2014/2016, Clemens et al. 2018 and Calhoun et al. 2019 (Tracks 01, 06); the live audit did not check these. A 2025 lead on context-dependent multimodal signaling is listed below.
+- **Which inputs were not covered?** Gaps include female copulation song, other males' song, substrate vibration, aggression song, near-field escape, sound localization between the two antennae, and sine-specific processing. Kerwin et al. 2020 (female copulation song) and Versteven et al. 2017 (hearing and aggression) are audited in Track 01 [24][27] and Track 06 [15]; Batchelor & Wilson 2019 (Track 03), named by round-1 verifiers, was not checked.
+- **How does the receiver shape the sender?** Male song depends on female movement and distance, and males switch between two pulse types, Pfast and Pslow. How female neurons respond to each type is untested here. This loop is the closest fly analogue to a conversation. Round-1 verifiers named Coen et al. 2014/2016, Clemens et al. 2018 and Calhoun et al. 2019; this track's live audit did not check them, and Tracks 01 [16][17][18] and 06 [1][2][3][4] audit them. A 2025 lead on context-dependent multimodal signaling is listed below.
 - **What happens downstream of the reply neurons?** Where vpoDN and DNp13 outputs go in the nerve-cord connectomes (FANC, BANC) is unknown. Which male neurons read OE and VPO is also unknown (Track 06).
 
 ## Candidate research projects
@@ -169,10 +169,9 @@ The connectome also revises the 2015 male pathway: vPN1 is GABAergic, and the an
 - **JON adaptation preprint [4].** No journal version appeared in the live results; cite it as a preprint. One round-1 verifier cites Clemens et al. 2018 (Nat Commun) as independent support for adaptation.
 - **Dop1R2 modulation of JONs [5].** Single lab; the erratum (PMID 41660267) is unchecked; author names and the article number 113232 were not visible in the live results.
 - **pCd-2 learning [15].** The sex tested and the full author list (possibly Imoto K, ..., Aso Y, Funke J, ..., Kamikouchi A) are unconfirmed. Per round 1, the learning paradigm comes from Li, Ishimoto & Kamikouchi 2018 (eLife).
-- **Male CNS connectome [23].** Named authors (reportedly Berg, Beckett, Costa, Schlegel et al.) were not visible in the live results. The ascending-neuron feedback pathway was not visible in search text.
+- **Male CNS connectome [23].** This track's audit did not see the author list; the first author (Berg S) follows Tracks 01 and 09. The ascending-neuron feedback pathway was not visible in search text.
 - **Antenna study [2].** Authors and venue (round 1: Morley, Jonsson & Robert, J Acoust Soc Am) are unconfirmed, and the louder-than-predicted song finding was not visible.
-- **Fru/Dsx annotation [18].** Authors and the per-category counts were not visible. The SAG attribution cites "Wang F et al. 2020 Nature", while the Nature receptivity paper [12] is listed with Wang K first and dated 2021 (online 2020); check which reference is meant.
-- **Wang et al. Nature author order [12].** Not visible in the live results; round 1's order (Wang K first) is kept.
+- **Fru/Dsx annotation [18].** Authors and the per-category counts were not visible.
 - **Deutsch et al. 2019 correction notice [11].** Indexed in 2023; content unchecked.
 - **Details that rest on both round-1 verifiers.** The live search did not display these parts of [HIGH] claims: the early-versus-late variability pattern [1], the B1 conductance explanation [6], B1's difference from JONs and the feedforward arrangement [8], the pC1d/e-aIPg recurrent wiring [14], and the "tens of seconds" timescale [19].
 
@@ -181,7 +180,7 @@ The connectome also revises the 2015 male pathway: vPN1 is GABAergic, and the an
 Found by the live auditor and not independently verified.
 
 - [MED] **vPN1 is GABAergic; the male song pathway to pC1 is disinhibitory.** The male CNS connectome shows that vPN1 inhibits a male-specific mAL, which inhibits pC1, revising the aPN1 -> vPN1 -> pC1 excitatory chain proposed from 2015 imaging. Any model that uses connectome wiring to predict song responses needs this motif. It has been folded into the male-pathway text above. Cell 189(18):5504-5526.e15, 2026; connectome wiring. https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6?rss=yes
-- [MED] **A neural circuit for context-dependent multimodal signaling in Drosophila** (Nature Communications, 2025). It appears to build on the pC2 song-detector and song-production work and is relevant to how flies choose between signal modalities by context. Only the title was visible; check the findings before using it. https://www.nature.com/articles/s41467-025-64907-9
+- [MED] **A neural circuit for context-dependent multimodal signaling in Drosophila** -- Steinfath E, Khalili A, Stenger M, Schultze BL, Ravindran Nair S, Alizadeh K, Clemens J -- Nature Communications 16:9472, 2025. Audited as Track 01 [15] and Track 05 [12]: the same brain neurons drive airborne song and substrate vibration through separate premotor pathways. It is relevant to how flies choose between signal modalities by context. This track's auditor saw only the title. https://www.nature.com/articles/s41467-025-64907-9
 
 ## Claims dropped in verification
 
@@ -199,7 +198,7 @@ Round-1 narrowing that still holds:
 - Dop1R2 [5]: "copulation receptivity", "three receptor types" and "5-7 days" were judged unsupported. The live results now describe three receptor types and copulation receptivity as the measure; the kept claim retains the narrower wording, and the 5-7 day age remains unconfirmed.
 - Male CNS [23]: "including the early auditory pathway" was the researcher's extrapolation. Two conflicting type-count sets and a ~166,700-neuron total were removed in round 1; the live audit has since found the final published counts, given above.
 - vpoEN partners [23]: the "switchboard" label and "routes song in males" read function into wiring. The live results show that "switchboard motif" is the authors' own term; the claim keeps the wiring-only wording.
-- Fru/Dsx annotation [18]: credit for the SAG relay moved to earlier functional work.
+- Fru/Dsx annotation [18]: credit for the SAG relay moved to earlier work (Feng et al. 2014 for SAG; Wang F et al. 2020, by EM connectomics, for SAG-to-pC1).
 - Antenna [2]: "the antenna should neither amplify nor tune to song" was softened, and the measurements are described as biophysical rather than behavioral.
 - Seed leads: Baker 2022 [9] was not in the October 2024 FlyWire package. Wang et al. [12] is Nature 589 (2021), published online in 2020.
 - Not used as evidence: hobbyist repositories ("flybrain-audio", "neurofly16px") and an AI search summary giving unsourced BANC counts.
@@ -217,6 +216,13 @@ Narrowing by the live audit:
 - Model comparison [20]: "best model" is read as best at predicting behavior.
 - Not used as evidence: an aggregator summary describing a "closed-loop system" in the male CNS, which was the search tool's own synthesis rather than source text.
 
+Changed in the cross-track consistency check:
+
+- vpoDN inputs [12]: "the synaptic connections were confirmed in EM connectome data" became "the paper reports EM connectivity for these inputs", because Track 03's audit could not see the dataset.
+- Wang et al. author order [12]: confirmed as Wang K first; the round-1 caveat and its lead were removed.
+- SAG [18]: the SAG-to-pC1 link is credited to Wang F et al. 2020 (EM connectomics), matching Track 03.
+- Pointers added to audits in other tracks for Kerwin et al. 2020, Versteven et al. 2017, the song-vibration paper and the courtship-feedback papers.
+
 ## Sources
 
 1. Auditory activity is diverse and widespread throughout the central brain of Drosophila -- Pacheco DA, Thiberge SY, Pnevmatikakis E, Murthy M -- Nature Neuroscience 24(1):93-104, 2021 -- https://www.nature.com/articles/s41593-020-00743-y
@@ -230,7 +236,7 @@ Narrowing by the live audit:
 9. Neural network organization for courtship-song feature detection in Drosophila -- Baker CA, McKellar C, Pang R, Nern A, Dorkenwald S, Pacheco DA, et al., Murthy M -- Current Biology 32(15):3317-3333.e7 (PMID 35793679), 2022 -- https://www.cell.com/current-biology/fulltext/S0960-9822(22)00978-2 (also https://pubmed.ncbi.nlm.nih.gov/35793679)
 10. Central neural circuitry mediating courtship song perception in male Drosophila -- Zhou C, Franconville R, Vaughan AG, Robinett CC, Jayaraman V, Baker BS -- eLife 4:e08477, 2015 -- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4575990/
 11. Shared Song Detector Neurons in Drosophila Male and Female Brains Drive Sex-Specific Behaviors -- Deutsch D, Clemens J, Thiberge SY, Guan G, Murthy M -- Current Biology 29(19):3200-3215.e5 (correction notice indexed 2023, PII S0960-9822(23)01049-7), 2019 -- https://www.sciencedirect.com/science/article/pii/S0960982219310243 (also https://pmc.ncbi.nlm.nih.gov/articles/PMC6885007/)
-12. Neural circuit mechanisms of sexual receptivity in Drosophila females -- Wang K, Wang F, Forknall N, Yang T, Patrick C, Parekh R, Dickson BJ (order from round 1) -- Nature 589(7843):577-581 (online 2020; preprint bioRxiv 2020.08.07.241919), 2021 -- https://www.nature.com/articles/s41586-020-2972-7
+12. Neural circuit mechanisms of sexual receptivity in Drosophila females -- Wang K, Wang F, Forknall N, Yang T, Patrick C, Parekh R, Dickson BJ -- Nature 589(7843):577-581 (online 2020; preprint bioRxiv 2020.08.07.241919), 2021 -- https://www.nature.com/articles/s41586-020-2972-7
 13. Central brain neurons expressing doublesex regulate female receptivity in Drosophila -- Zhou C, Pan Y, Robinett CC, Meissner GW, Baker BS -- Neuron 83(1):149-163, 2014 -- https://pubmed.ncbi.nlm.nih.gov/24991959/
 14. The neural basis for a persistent internal state in Drosophila females -- Deutsch D, Pacheco D, Encarnacion-Rivera L, et al., Murthy M -- eLife 9:e59502 (also PMC7787663), 2020 -- https://elifesciences.org/articles/59502
 15. Neural-circuit basis of song preference learning in fruit flies -- Kamikouchi lab (Nagoya) with Janelia co-authors; full author list not confirmed -- iScience (June 2024; preprint bioRxiv 2023.10.24.563693; PMC11260866), 2024 -- https://www.cell.com/iscience/fulltext/S2589-0042(24)01491-3
@@ -241,7 +247,7 @@ Narrowing by the live audit:
 20. Inferring neural population codes for Drosophila acoustic communication -- Pang R, Baker CA, Murthy M, Pillow J -- PNAS (also PMC12130820), 2025 -- https://www.pnas.org/doi/10.1073/pnas.2417733122
 21. Female Drosophila melanogaster respond to song-amplitude modulations -- Brüggemeier B, Porter MA, Vigoreaux JO, Goodwin SF -- Biology Open 7(6):bio032003 (PMID 29666051; PMC6031343), 2018 -- https://journals.biologists.com/bio/article/7/6/bio032003/1956/Female-Drosophila-melanogaster-respond-to-song
 22. Evolutionary conservation and diversification of auditory neural circuits that process courtship songs in Drosophila -- Ohashi T, et al. (Kamikouchi lab) -- Scientific Reports (PMID 36611081; PMC9825394), 2023 -- https://pubmed.ncbi.nlm.nih.gov/36611081/
-23. Sexual dimorphism in the complete Drosophila male central nervous system connectome -- Janelia FlyEM, MRC LMB, University of Cambridge and Google Research consortium (named authors not confirmed; reportedly Berg, Beckett, Costa, Schlegel et al.) -- Cell 189(18):5504-5526.e15 (published 3 Sep 2026; doi:10.1016/j.cell.2026.08.015; PMID 42691995; preprint "Sexual dimorphism in the complete connectome of the Drosophila male central nervous system", bioRxiv 10.1101/2025.10.09.680999), 2026 -- https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6
+23. Sexual dimorphism in the complete Drosophila male central nervous system connectome -- Berg S et al. (Janelia FlyEM, Cambridge, Google) -- Cell 189(18):5504-5526.e15, 2026 (published 3 Sep 2026; doi:10.1016/j.cell.2026.08.015; PubMed 42691995; preprint "Sexual dimorphism in the complete connectome of the Drosophila male central nervous system", bioRxiv 10.1101/2025.10.09.680999) -- https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6
 
 ## Verification ledger
 

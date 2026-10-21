@@ -43,6 +43,8 @@ flowchart LR
 | **[LOW]** | The source could not be located, or the claim is unconfirmed. |
 | **[CONFLICT]** | Independent checks disagree. Both readings are shown. |
 
+**Cross-track harmonization.** After synthesis, the consistency checker aligns tags across dossiers: if one track's live audit saw a finding, the same finding from the same paper may carry [HIGH] in every dossier; otherwise it carries [MED] everywhere. The evidence ledger keeps both tags (`audit_tag` and `confidence_tag`). In the 2026-09-25 run, 13 of 274 claims changed this way.
+
 Every claim also carries an evidence type. In this program the most important distinction is between neurons **recorded** lighting up (calcium or voltage imaging, electrophysiology), neurons **manipulated** to test cause (optogenetics, silencing), and neurons that are only **wired** a certain way in a connectome.
 
 ## Running it

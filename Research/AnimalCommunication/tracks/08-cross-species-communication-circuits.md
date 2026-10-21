@@ -23,7 +23,7 @@
   The grouping is the track's synthesis. Only temporal-pattern filtering has a demonstrated fly counterpart [HIGH][11].
 - **The results closest to conversation are causal studies of reply timing.** Blocking inhibition in zebra finch HVC makes call replies faster and impairs overlap avoidance [HIGH][6]. Singing-mouse orofacial motor cortex is needed for rapid countersinging replies [MED][5]. No claim in this track describes a turn-taking mechanism in the fly.
 - **The mouse pathway from preoptic area to PAG-USV neurons to RAm is the clearest vertebrate parallel to the fly's command-to-pattern-generator song circuit** [MED][31], [HIGH][1], [MED][4]. The analogy is the researcher's, and nobody has yet checked it against current fly connectomes [LOW].
-- **No evidence here decodes what an animal signal means.** It shows whether a signal is produced, when, what category it is, and who sent it [HIGH][12][13][15]. The nearest result, addressee-specific features in marmoset phee calls [HIGH][17], is behavioral, comes from one lab, and is contested in print (see New leads).
+- **No evidence here decodes what an animal signal means.** It shows whether a signal is produced, when, what category it is, and who sent it [HIGH][12][13][15]. The nearest result, addressee-specific features in marmoset phee calls [MED][17], is behavioral, comes from one lab, and is contested in print (see New leads).
 - **Connectomes outside the fly remain small or partial.** MICrONS and H01 each cover about 1 mm³ of cortex [HIGH][26][27]. The Allen-led BRAIN CONNECTS project targets up to 10 mm³ of mouse brain [HIGH][28]. A 2025 preprint reports a synapse-level EM reconstruction of a 6 dpf larval zebrafish brain with more than 176,000 cells [MED][25]. The researcher ranks the next species as C. elegans, larval zebrafish and field cricket, then zebra finch, mouse, and bats and marmosets [LOW]; the audited evidence fits the first three, which already have identity-matched whole-brain imaging [21], whole-brain EM [25] or an identified detector circuit with a fitted model [9][10].
 - **Start with three projects:**
   - a computational benchmark of fly and cricket song detectors (can start now);
@@ -83,7 +83,7 @@ Serial block-face EM of zebra finch HVC shows HVC(RA) axons target almost only i
 - In pairs, wireless recordings showed frontal activity correlated between the two brains on timescales from seconds to hours. The correlation was strongest in high-frequency LFP (>30 Hz), tracked how much the bats interacted, and rose before interactions began [HIGH][12]. The audit adds that the correlation depended on the bats sharing a social environment, so it may reflect shared context rather than an exchange of information.
 - In an observer bat, a subpopulation of dorsal CA1 neurons encodes the position of a demonstrator bat in allocentric coordinates (social place cells), and about half of them also encode the observer's own position [HIGH][14]. This is position coding, not signal content.
 
-**Marmoset.** In captive marmosets, phee calls in natural pair exchanges carried acoustic features that predicted which individual was addressed, which the authors interpret as vocal labels. In playback via a computerized system, marmosets responded more consistently to calls directed at them. Family members used similar labels and shared acoustic features, suggesting learning [HIGH][17]. This is a single-lab behavioral result with no neural data; the "name" interpretation is debated and awaits replication, and a published critique and reply now exist (see New leads).
+**Marmoset.** In captive marmosets, phee calls in natural pair exchanges carried acoustic features that predicted which individual was addressed, which the authors interpret as vocal labels. In playback via a computerized system, marmosets responded more consistently to calls directed at them. Family members used similar labels and shared acoustic features, suggesting learning [MED][17]. The tag matches Track 07 [9], whose audit saw the classifier and playback details only indirectly. This is a single-lab behavioral result with no neural data; the "name" interpretation is debated and awaits replication, and a published critique and reply now exist (see New leads).
 
 ### Social-signal detection (zebrafish) and pheromone sensing (C. elegans)
 
@@ -150,7 +150,7 @@ By tracking cuttlefish chromatophores at high resolution, Reiter et al. inferred
 - **Reply timing is actively controlled.** A partner with a fixed delay is the wrong model [HIGH][6], [MED][5]. An artificial partner should adapt its latency and avoid overlap. Useful measures are turns per exchange, overlap rate and how latency adapts.
 - **Receivers filter by temporal structure and category.** The cricket network defines the pulse period, duration and pause that a signal must match [HIGH][9][10], so synthetic signals outside those ranges are likely to be ignored. Bat colliculus responses switch sharply at the boundary between call categories when calls are morphed [HIGH][15], which gives a comparable boundary for vertebrate calls.
 - **Gates are readouts.** PAG-USV activity marks readiness to produce USVs, independent of squeaks [HIGH][1][2]. Recording it during interactive playback tests whether a partner's calls change that readiness. Pre-call cortical activity in bats and marmosets could serve as an "about to call" cue; both sources are now located, and both relationships are predictive rather than causal [MED][16][18].
-- **Caller identity matters to the listener.** Bat frontal neurons separate callers [HIGH][13], and marmoset calls carry addressee-specific features [HIGH][17]. An artificial partner may therefore be represented differently from a conspecific. No audited claim tests this; a 2025 study of hippocampal identity coding in wild fruit bats is a starting point (see New leads).
+- **Caller identity matters to the listener.** Bat frontal neurons separate callers [HIGH][13], and marmoset calls carry addressee-specific features [MED][17]. An artificial partner may therefore be represented differently from a conspecific. No audited claim in this track tests this; a 2025 study of hippocampal identity coding in wild fruit bats, audited in Track 07 [17], is a starting point (see New leads).
 - **Closed loops are practical now in small systems.** Candidates are identity-matched whole-brain imaging in C. elegans [MED][21][32] and dot-motion stimuli in zebrafish [HIGH][24].
 - **The realistic target is well-timed, category-appropriate, partner-aware exchange rather than translation.** None of these circuits encodes meaning in a decodable form [HIGH][12][13][15]. Generative models of marmoset calls (GmSLM, see New leads) could supply plausible output signals, but producing calls is a different problem from understanding them.
 
@@ -221,7 +221,7 @@ Found by the live auditor and not independently verified.
 
 - [MED] **Vocal labeling of others by nonhuman primates: A response to Jaakkola (2025)** -- Learning & Behavior, 2025. The marmoset vocal-labeling result has a published critique by Jaakkola (2025) and a reply by the original authors, so the interpretation is contested in print. It gives a specific citation for the "debated" caveat on [17]. https://link.springer.com/article/10.3758/s13420-025-00682-3
 - [MED] **GmSLM: Generative Marmoset Spoken Language Modeling** -- arXiv, 2025. A generative spoken-language model of marmoset vocalizations; details were not checked beyond the title. Relevant to producing signals back to animals; the track has no generative-modeling claims. https://arxiv.org/pdf/2509.09198
-- [MED] **Hippocampal coding of identity, sex, hierarchy, and affiliation in a social group of wild fruit bats** -- Ulanovsky lab (full author list not verified) -- Science, 2025. Extends social place-cell work [14] to naturalistic group social cognition, with single-neuron readouts of identity and relationships. https://www.science.org/doi/10.1126/science.adk9385
+- [MED] **Hippocampal coding of identity, sex, hierarchy, and affiliation in a social group of wild fruit bats** -- Ray S, Yona I, ..., Ulanovsky N -- Science 387(6733):eadk9385, 2025; audited in Track 07 [17]. Extends social place-cell work [14] to naturalistic group social cognition, with single-neuron readouts of identity and relationships. https://www.science.org/doi/10.1126/science.adk9385
 - [MED] **Cortical regulation of collective social dynamics during environmental challenge** -- authors not verified -- Nature Neuroscience, 2026. Found on a search for bat group vocal communication; known by title only, and species and design are unverified (possibly a Yartsev-lab follow-up to [12][13]). Check before citing. https://www.nature.com/articles/s41593-026-02224-0
 - [MED] **Unifying community whole-brain imaging datasets enables robust neuron identification and reveals determinants of neuron position in C. elegans** -- authors and venue not verified (PubMed 39826553; the audit notes attribute it to Sprague et al.) -- 2025. Pools NeuroPAL whole-brain datasets from multiple labs; the probable source of the "at least six labs" statement under [21]. https://pubmed.ncbi.nlm.nih.gov/39826553/
 
@@ -254,6 +254,10 @@ No claim was dropped (0 of 31), in round 1 or in the live audit. The statements 
 - Zebrafish EM: "2025 preprints" became one preprint (Fish-X), now described by its size and labeling.
 - Xenopus: "vocal motor nucleus (VMN)" became n.IX–X. Details that DTAM lesions abolish calling and that 5-HT2C receptors are involved come from later Yamaguchi-lab papers (2009–2010), not the 2007 study.
 - Drosophila auditory cell types: ">20, count not confirmed" resolves to 24 in the audit's results.
+
+**Changed in the cross-track consistency check**
+- Marmoset vocal labeling [17]: lowered from HIGH to MED to match Track 07 [9], whose audit saw the classifier and playback details only indirectly.
+- The 2025 wild fruit bat hippocampus lead now carries the citation audited in Track 07 [17].
 
 ## Sources
 
@@ -310,7 +314,7 @@ No claim was dropped (0 of 31), in round 1 or in the live audit. The statements 
 | 14 | Observer bat CA1 neurons encode demonstrator's position; about half also self-position | HIGH | confirmed | 14 |
 | 15 | Big brown bat colliculus neurons cluster by social versus echolocation call category | HIGH | confirmed | 15 |
 | 16 | Carollia auditory cortex predicts upcoming call class and syllable count hundreds of ms ahead | MED | confirmed | 16 |
-| 17 | Marmoset phee calls carry addressee-specific features; addressees respond more consistently; debated | HIGH | confirmed | 17 |
+| 17 | Marmoset phee calls carry addressee-specific features; addressees respond more consistently; debated | MED | confirmed | 17 |
 | 18 | Marmoset frontal-to-auditory signaling before calls predicts auditory suppression and call acoustics | MED | confirmed | 18 |
 | 19 | Marmoset frontal neurons code hearing, calling and state; clusters distributed across subfields | MED | corrected | 19 |
 | 20 | Male C. elegans ascr#8 attraction via CEM; opposite-sign CEM responses shape preference | HIGH | confirmed | 20 |

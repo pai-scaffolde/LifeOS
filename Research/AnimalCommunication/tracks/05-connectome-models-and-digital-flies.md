@@ -9,11 +9,11 @@
 - Wiring alone generally cannot predict activity; wiring plus recordings from some neurons can predict the rest [HIGH][3]. Two 2026 FlyWire-constrained whole-brain models have already been fit to spontaneous calcium imaging [MED][22] [HIGH][23], so the fitting route exists, but neither was driven with communication stimuli. The plan must be fit-then-predict, which makes song-evoked imaging (track 04) a requirement.
 - In this claim set, the evidence of communication neurons responding is recorded, not simulated:
   - 24 auditory cell types with measured pulse/sine and pulse-rate tuning [HIGH][13]
-  - pulse-preferring pC2l and vpo neurons [MED][14][15]
+  - pulse-preferring pC2l and song-tuned vpo neurons [MED][14][15]
   - nested nerve-cord activity in singing males [HIGH][27]
 
   These recordings are the benchmark a digital fly must reproduce.
-- Substrates for sex-matched simulation of sender and receiver are now published. The male CNS connectome (166,700 neurons across brain and nerve cord, 11,710 types, 138 dimorphic and 289 male-specific types) appeared in Cell [HIGH][18]. The female BANC brain-and-cord connectome appeared in Nature; its exact counts should be taken from the paper [MED][19].
+- Substrates for sex-matched simulation of sender and receiver are now published. The male CNS connectome (166,700 neurons across brain and nerve cord, 11,710 types, 138 dimorphic and 289 male-specific types) appeared in Cell [HIGH][18]. The female BANC brain-and-cord connectome appeared in Nature; it has about 160,000 neurons (158,262 per news coverage of the paper), and its exact counts should be taken from the paper [MED][19].
 - Company and hobbyist digital-fly demos do not show validated communication. Eon's closed-loop fly reads out hand-picked descending neurons as turn, walk, groom and feed commands [HIGH][6]. flymsg passes 29 self-defined qualitative checks, one of them a P1-to-pIP10 song-pathway check, but none compares the simulation with recorded activity [MED][28].
 - Suggested order: an in silico song playback benchmark and a simulation of the song rhythm generator, both computer-only and ready to start now; then a fit-then-predict auditory model whose imaging is sized in simulation first.
 
@@ -26,8 +26,8 @@ Round 1 used one researcher with live web search and two independent verifiers, 
 ### Whole-brain connectome models: what has been validated
 
 **Shiu et al.** built a leaky integrate-and-fire (LIF) model of the entire adult Drosophila central brain from two inputs only: FlyWire synaptic connectivity and predicted neurotransmitter identity. When sugar- or water-sensing gustatory neurons are activated in silico, it predicts neurons that respond to tastes and are required for feeding initiation [HIGH][1].
-- Because it is built from those two inputs alone, the model carries nothing beyond synaptic wiring and transmitter identity. The critique in [7] adds that it has no dendritic detail or plasticity [MED][7].
-- Round-1 verifiers disagreed on its scope (central brain only, or the whole FlyWire brain including optic lobes). The audited claim reads "central brain"; the audit did not see scope details.
+- Its only circuit-specific inputs are synaptic wiring and transmitter identity. Round-1 verifiers in Track 09 add that its global parameters came from the literature, so it is not strictly parameter-free (not checked live). The critique in [7] adds that it has no dendritic detail or plasticity [MED][7].
+- Round-1 verifiers disagreed on its scope (central brain only, or the whole FlyWire brain including optic lobes). The audited claim reads "central brain"; the audit did not see scope details. Track 09 [18] describes it as a model of the whole FlyWire brain; check the abstract of Nature 634:210-219 and use the same wording in both tracks.
 - Evidence type: model prediction.
 
 Activating Johnston's organ (JO) mechanosensory neurons in the same model predicts a small antennal-grooming circuit (aBN1, aBN2, aDN1, aDN2). It also makes a non-obvious prediction: JO-CE neurons drive robust aBN1 activity but JO-F neurons do not, despite synapsing directly onto aBN1. This was tested by optogenetic activation of each JON population plus calcium imaging in aBN1 [HIGH][1]. The song-sensing JO subgroups (JO-A/B) were not part of these tests, and no claim in this set drives the model with song.
@@ -46,7 +46,7 @@ Three works show a route from connectome to calibrated model. All three concern 
 
 - **Spontaneous-activity preprint.** A whole-brain model constrained by the FlyWire connectome, fit to calcium recordings of spontaneous activity in head-fixed flies, reproduced three features it was not trained on: lognormal synaptic weights, scale-free neuronal avalanches, and short intrinsic time constants in visual cells. In silico perturbations suggested that a sparse, brain-spanning ensemble of inhibitory hub neurons is necessary and sufficient to sustain resting dynamics [MED][22]. The audit's results add that the hubs act through reciprocal synapses with excitatory partners within a compact neuropil core. It is an unreviewed bioRxiv preprint posted in August 2026, and its authors were not visible. A round-1 verifier noted that many network models produce such features.
 - **Online fitting.** A related method fits a firing-rate model constrained by the FlyWire connectome to whole-brain calcium imaging online. It treats synaptic weights, neuronal time constants and background input strengths as unknowns to be fitted, with the connectome fixing only the network topology [HIGH][23]. The models are threshold-linear. It is an OpenReview submission whose authors and review status were not visible. It reports the same three untrained features as [22] and is likely that preprint's methods companion.
-- **Function vs structure.** In whole-brain calcium imaging analysed with fMRI-style methods, resting-state functional correlations relate strongly to direct region-to-region structural connectivity, but the relationship varies across the brain; the mushroom body depends more on indirect connections [MED][26]. The audit did not see this finding in search results. It saw two other findings from the same work: the functional-structural correlation falls linearly as the number of regions rises, and unsegregated synapses (by a new pre/post-synaptic segregation index) show a higher functional-structural correlation.
+- **Function vs structure.** Okuno et al. (2025, eLife reviewed preprint) applied fMRI-style methods to fly whole-brain calcium imaging with the FlyEM/FlyWire connectomes. The FC-SC correlation fell linearly as the number of regions rose, and neurons with unsegregated synapses (by a new pre/post-synaptic segregation index) showed higher FC-SC correlation [MED][26]. This track's audit saw both findings; Track 04's audit saw only the first. The direct-connectivity and mushroom-body finding is from Turner, Mann & Clandinin 2021 (Current Biology 31(11):2386-2394.e3, volume and pages unconfirmed), see Track 04 [21].
 
 ### Simulating the nerve cord: a template for the song generator
 
@@ -57,7 +57,7 @@ Three works show a route from connectome to calibrated model. All three concern 
 
 The audit saw all three findings stated directly. The tag is [MED] because the citation needed correction: round 1 had listed Shiu as a co-author, and the authors are Pugliese, Chou, Abe, Turcu, Lancaster, Tuthill and Brunton. The work is a bioRxiv preprint about walking; PubMed and PMC listings suggest later indexing or publication, but no journal was identified. The experimental test in the claim is behavioural. Code: Pugliese_cpg_2025 [31].
 
-**Lillvis et al.** activated and silenced more than 40 cell types in behaving males while recording song, and added wiring from the male VNC connectome (MANC). They identified a core nerve-cord song circuit of eight fru- and/or dsx-expressing cell types in two nested feedforward pathways: the smaller drives sine song, and the larger, which includes the smaller, drives pulse song [MED][10]. Evidence type: causal manipulation plus connectome wiring. The audit saw the paper but not the screen size or the eight-type details.
+**Lillvis et al.** activated and silenced more than 40 cell types in behaving males while recording song, and added wiring from the male VNC connectome (MANC). They identified a core nerve-cord song circuit of eight fru- and/or dsx-expressing cell types in two nested feedforward pathways: the smaller drives sine song, and the larger, which includes the smaller, drives pulse song [HIGH][10]. Evidence type: causal manipulation plus connectome wiring. This track's audit saw the paper but not the screen size or the eight-type details; the screen size (58 lines, at least 40 cell types) was visible in Track 04's audit, and the nested-pathway organisation in Tracks 01 and 06.
 
 **Shiozaki et al.** (Stern lab with Dickson-lab collaborators) imaged calcium activity of nerve-cord song-circuit neurons in singing males. Activity is nested: neurons active during sine song are also active during pulse song, and pulse song recruits additional neurons. This is consistent with the nested pathways identified in [10] [HIGH][27]. It is recorded activity of communication neurons during signalling, and the audit saw the key finding stated directly; its results add that the nested pattern appears in two descending pathways. Data and code are on Janelia figshare [35].
 
@@ -72,15 +72,15 @@ No claim in this group describes a model built from connectome wiring.
   - Near her, strong input plus P1a-mediated disinhibition of the VNC song premotor circuit yields complex alternating sequences.
 
   The audit's results add that a single pathway works in two regimes and that the VNC circuit is shaped by mutual inhibition and rebound excitability. The identity of the direct pathway as pIP10 comes from round-1 recall and was not confirmed in the audit.
-- **Steinfath et al.** The same male brain neurons that drive air-borne courtship song also control substrate-borne vibration through separate premotor pathways. The shared circuit uses recurrence and mutual inhibition, and coordinates the signals with locomotion so vibrations occur only when they can reach the female. A circuit model is released as code [HIGH][12][32]. The audit did not see the locomotion coupling in search results, though nothing contradicted it. A round-1 verifier read "only when they can reach the female" as the authors' interpretation of a link to locomotion state.
-- **Calhoun et al.** During courtship, males pattern their song using feedback cues from the female. An unsupervised model (GLM-HMM) uncovers three hidden states, each with a different mapping from feedback cues to song mode, and predicts moment-to-moment song-patterning decisions. A neuron pair previously considered song command neurons is sufficient to drive switching between states [HIGH][17]. This is the most dialogue-like result in the set: the receiver's behaviour changes the sender's signal. The command-neuron finding was not visible in the audit's results. An Author Correction exists and should be cited with the paper.
+- **Steinfath et al.** The same male brain neurons that drive air-borne courtship song also control substrate-borne vibration through separate premotor pathways. The shared circuit uses recurrence and mutual inhibition, and limits vibration to contexts, such as a close or stationary female, where it is likely to be effective. A circuit model is released as code [MED][12][32]. This wording and tag match Track 01 [15], whose round 1 replaced "only when they can reach the female" with context variables; this track's audit did not see a locomotion coupling.
+- **Calhoun et al.** During courtship, males pattern their song using feedback cues from the female. An unsupervised model (GLM-HMM) uncovers three hidden states, each with a different mapping from feedback cues to song mode, and predicts moment-to-moment song-patterning decisions [HIGH][17]. Activating a neuron pair previously described as song command neurons (likely pIP10; confirm in the full text) was sufficient to drive switching between states [MED][17]. This is the most dialogue-like result in the set: the receiver's behaviour changes the sender's signal. The command-neuron finding was not visible in the audit's results. An Author Correction exists and should be cited with the paper.
 - **Cowley et al.** A deep network trained with "knockout training", in which silencing of individual visual projection neuron types in behaving males is mirrored by removing matching model units, gives a one-to-one mapping between model units and LC neuron types. It shows that combinations of visual projection neurons form a population code driving male courtship interactions with the female [HIGH][16]. The one-to-one mapping follows from the training design. Round 1 recorded 23 silenced LC types; the audit's results said "more than a dozen" cell types, so the exact number is unconfirmed.
 
 ### Recorded song responses a digital receiver must reproduce
 
 **Baker et al.** identified 24 new intermediate auditory cell types and mapped all their synaptic connections in FlyWire. They measured each cell's pulse vs sine preference, sine-frequency tuning and pulse-rate tuning, finding a continuum of song-mode preferences. The results support interconnectivity, rather than separate pulse and sine pathways, as the source of that continuum [HIGH][13]. The tuning is recorded activity. The interconnectivity account rests on wiring plus tuning, and the claim describes no causal test. The audit's results describe highly interconnected neurons of different preferences in a non-hierarchical network; the per-cell tuning measures were not visible in the summary.
 
-Calcium imaging shows that pC2l neurons in males and females respond selectively to pulse-song features, from single-pulse frequency to pulse-train length, and weakly to sine (Deutsch et al. 2019) [MED][14]. In females, vpoDN and its song-responsive inputs vpoEN (and reportedly vpoIN) respond more strongly to pulse than sine (Wang et al. 2021) [MED][15]. These are activity-recorded results from separate studies, summarised in [13]. The audit saw the Wang et al. citation; Deutsch et al. and the pulse-vs-sine findings themselves were not live-checked.
+Calcium imaging shows that pC2l neurons in males and females respond selectively to pulse-song features, from single-pulse frequency to pulse-train length, and weakly to sine (Deutsch et al. 2019) [MED][14]. In females, vpoDN and its song-responsive inputs vpoEN (and reportedly vpoIN) are tuned to features of D. melanogaster courtship song (pulse-specific tuning unconfirmed; see Track 03) (Wang et al. 2021) [MED][15]. These are activity-recorded results from separate studies, summarised in [13]. The audit saw the Wang et al. citation; Deutsch et al. and the pulse-vs-sine findings themselves were not live-checked.
 
 No connectome simulation in this claim set has reproduced these recordings.
 
@@ -99,7 +99,7 @@ No connectome simulation in this claim set has reproduced these recordings.
 - Among the datasets in this claim set, it is the only one covering both brain and nerve cord of a male, so it holds both the song-producing and the song-hearing circuits of the singing sex.
 - A round-1 verifier cautioned that comparisons between individual flies can count individual variation, of the kind reported in [21], as dimorphism.
 
-**BANC** is a synapse-resolution connectome of the brain and nerve cord of one adult female fly. Its wiring shows effector neurons mainly influenced by sensory neurons in the same body part, forming local feedback loops. These loops are linked by long-range ascending and descending neurons organised into behaviour-centred modules [MED][19]. Evidence type: wiring only. The audit saw this finding stated directly and confirmed publication in Nature in 2026; its results add that the paper frames "cognitive" regions as supervisory rather than essential for action. Exact neuron and synapse counts should be taken from the paper: round 1 carried about 188,000 neurons and 199 million synapses, while the audit's result text gave about 160,000 neurons.
+**BANC** is a synapse-resolution connectome of the brain and nerve cord of one adult female fly. Its wiring shows effector neurons mainly influenced by sensory neurons in the same body part, forming local feedback loops. These loops are linked by long-range ascending and descending neurons organised into behaviour-centred modules [MED][19]. Evidence type: wiring only. The audit saw this finding stated directly and confirmed publication in Nature in 2026; its results add that the paper frames "cognitive" regions as supervisory rather than essential for action. Exact neuron and synapse counts should be taken from the paper: round 1 carried about 188,000 neurons and 199 million synapses, while the audit's result text gave about 160,000 neurons, and news coverage of the Nature paper gives 158,262.
 
 **Transmitter prediction.** A neural network predicting six transmitters (acetylcholine, glutamate, GABA, serotonin, dopamine, octopamine) from EM images is 87% accurate per synapse, 94% per neuron and 91% for known cell types [HIGH][20]. The Shiu model takes predicted transmitter identity as one of its two inputs [1]; at 94% per-neuron accuracy, about 6% of neurons would carry a wrong label into simulations. Neuropeptides are not among the six classes.
 
@@ -125,12 +125,12 @@ No connectome simulation in this claim set has reproduced these recordings.
 | aBN1, aBN2, aDN1, aDN2 | Antennal-grooming circuit recovered from JO input | Female connectome | Model prediction (test described for aBN1) | [HIGH] | 1 |
 | 24 intermediate auditory types (AMMC/WED) | Continuum of pulse/sine preference; sine-frequency and pulse-rate tuning | Wiring from female FlyWire | Recorded activity plus wiring | [HIGH] | 13 |
 | pC2l | Pulse-song feature detector | Both | Recorded activity | [MED] | 14 |
-| vpoEN, vpoIN, vpoDN/pMN2 | Song-responsive inputs to vpoDN; pulse-preferring (vpoIN reported) | Female | Recorded activity | [MED] | 15 |
+| vpoEN, vpoIN, vpoDN/pMN2 | Song-responsive inputs to vpoDN; tuned to conspecific song features (pulse preference unconfirmed; vpoIN reported) | Female | Recorded activity | [MED] | 15 |
 | P1a | Disinhibits the VNC song premotor circuit near the female | Male | Model prediction (compact circuit model) | [HIGH] | 11 |
 | Direct brain-to-VNC song pathway (recalled as pIP10; identity unconfirmed) | Yields simple one-mode song under weak sensory input | Male | Model prediction | [HIGH] | 11 |
-| Neuron pair previously considered song command neurons | Sufficient to switch song-patterning states | Male | Model prediction plus manipulation | [HIGH] | 17 |
-| Shared song/vibration brain neurons | Drive song and substrate vibration through separate premotor pathways | Male | Causal manipulation plus circuit model | [HIGH] | 12 |
-| Eight fru/dsx VNC song types | Nested pathways: smaller = sine, larger = pulse | Male (MANC) | Causal manipulation plus wiring | [MED] | 10 |
+| Neuron pair previously described as song command neurons (likely pIP10; unconfirmed) | Sufficient to switch song-patterning states | Male | Model prediction plus manipulation | [MED] | 17 |
+| Shared song/vibration brain neurons | Drive song and substrate vibration through separate premotor pathways | Male | Causal manipulation plus circuit model | [MED] | 12 |
+| Eight fru/dsx VNC song types | Nested pathways: smaller = sine, larger = pulse | Male (MANC) | Causal manipulation plus wiring | [HIGH] | 10 |
 | VNC song neurons during singing | Sine-active neurons also active in pulse; pulse recruits more | Male | Recorded activity | [HIGH] | 27 |
 | LC visual projection neuron types (number silenced unconfirmed) | Population code for courtship | Male | Causal manipulation plus trained model | [HIGH] | 16 |
 | T4 / T5 | Direction selectivity predicted | Not stated | Model prediction matched to recordings | [HIGH] | 2 |
@@ -150,7 +150,7 @@ No connectome simulation in this claim set has reproduced these recordings.
 - **Unfitted models.** Driven by realistic JO-A/B input, does an unfitted LIF model reproduce pC2l's pulse preference [14] and the tuning in [13]? If not, which is missing: synaptic dynamics, delays, gap junctions or neuromodulation?
 - **Song front end.** How should a song waveform be converted into JO-A vs JO-B spike trains, including antennal mechanics, frequency tuning and adaptation? No such front end for a connectome model appears in this claim set.
 - **Data needed.** How many song-evoked recordings are needed to predict unrecorded auditory neurons, in the sense of [3]? Do fitting methods developed on spontaneous activity [22][23] transfer to stimulus-driven data?
-- **Internal state.** How should virgin vs mated state, persistent pC1 states and neuromodulators be represented? Round-1 verifiers named Deutsch 2020, Jung 2020 and peptides such as sex peptide, tachykinin and octopamine as uncovered; these were not checked. A record found in the live audit reports that recent social experience alters song behaviour (unverified; see new leads), so the sender's state may matter as much as the receiver's.
+- **Internal state.** How should virgin vs mated state, persistent pC1 states and neuromodulators be represented? Round-1 verifiers named Deutsch 2020, Jung 2020 and peptides such as sex peptide, tachykinin and octopamine as uncovered; these were not checked. A study found in the live audit reports that recent social experience alters song behaviour (audited in Track 01 [19]; see new leads), so the sender's state may matter as much as the receiver's.
 - **Robustness.** Which predicted responders hold up across ensembles that vary transmitter labels (about 6% neuron-level error implied by [20]), weight noise, and individual connectomes [21]?
 - **Song rhythm.** Does a simulated wing neuromere produce the nested sine-within-pulse structure seen in [10] and [27]?
 - **Pheromones.** Does a model driven through the DA1 pathway give sex-appropriate P1/pC1 responses on the matching-sex connectome? No validated pheromone simulation appears in this claim set, and a flymsg output about cVA driving P1/pC1 that round 1 carried was not found in the audit.
@@ -176,8 +176,8 @@ No connectome simulation in this claim set has reproduced these recordings.
 - **Findings not seen in live results.** For these claims the audit confirmed the source but not the specific finding:
   - Shiu [1]: the feeding results, the JO-CE vs JO-F result, the four grooming labels, and the model's scope (disputed in round 1).
   - Lappalainen [2]: the 64 cell types, 26 studies and T4/T5 details.
-  - Lillvis [10]: the 40+ cell-type screen and the eight-type circuit.
-  - Steinfath [12]: the locomotion coupling; the shared neurons are unnamed.
+  - Lillvis [10]: the list of eight named types, which no track's audit saw; the screen size was visible in Track 04's audit.
+  - Steinfath [12]: the shared neurons are unnamed; the locomotion-coupling wording was replaced by context variables to match Track 01 [15].
   - Baker [13]: the per-cell sine-frequency and pulse-rate tuning.
   - Deutsch [14]: not live-checked; Wang [15]: the citation was seen, but not vpoIN's preference or the pulse-vs-sine findings.
   - Cowley [16]: the number of LC types silenced (23 in round 1; "more than a dozen" in the audit's results).
@@ -185,9 +185,9 @@ No connectome simulation in this claim set has reproduced these recordings.
   - Roemschied [11]: the identity of the direct pathway (recalled as pIP10).
   - Blog critique [7]: the 1,300 descending-neuron figure and the dendrite and plasticity points.
   - Eckstein [20]: the page range.
-  - Functional vs structural connectivity [26]: the claimed finding; the audit saw different findings from the same work.
-- **BANC [19]:** round 1 carried about 188,000 neurons and 199 million synapses; the audit's result text gave about 160,000 neurons. Take counts from the paper.
-- **Male CNS [18]:** the first author "Berg S" was not visible in the audit's results.
+  - Functional vs structural connectivity [26]: the claim now states the two Okuno et al. findings this track's audit saw; Track 04's audit did not see the unsegregated-neuron result, so check it in the full text.
+- **BANC [19]:** round 1 carried about 188,000 neurons and 199 million synapses; the audit's result text gave about 160,000 neurons, and news coverage of the Nature paper gives 158,262. Take counts from the paper.
+- **Male CNS [18]:** the first author "Berg S" was not visible in this track's audit; Tracks 01 and 09 cite it.
 - **Pugliese [9]:** PubMed and PMC listings suggest later publication, but no journal was identified.
 - **Eon [6]:** the descending neurons read out are unnamed, and the mechanism details came from results for the critique, not from Eon's page.
 - **Preprints and unreviewed items:**
@@ -204,7 +204,7 @@ These were found by the live auditor but not independently verified.
 - [MED] "The embodied brain: Bridging the brain, body, and behavior with biorealistic neuromechanical models" (arXiv 2601.08056, January 2026). A review/perspective on biorealistic neuromechanical models linking brain, body and behaviour; contents not verified beyond the title. It could be used to check the embodied-model material [4][5][6]. https://arxiv.org/pdf/2601.08056
 - [LOW] "No, a Fruit Fly has not been uploaded" (Carboncopies Foundation blog, 2026). A critique of the Eon "uploaded fruit fly" claim, separate from [7]. https://carboncopies.org/Blog/Posts/FruitFlyNotUploaded/Post/
 - [MED] Male CNS connectome project page (Janelia FlyEM and collaborators, 2026). Describes the published MaleCNS v1.0 connectome (brain plus ventral nerve cord) and its sexual dimorphism. It is the same dataset as [18], whose Cell paper this dossier cites directly. https://www.janelia.org/project-team/flyem/male-cns-connectome
-- [MED] "Recent social experience alters song behavior in Drosophila" (PubMed record; year inferred as 2026; authors and venue not visible). Reports that recent social experience alters courtship song, so song is shaped by experience rather than fixed. This bears on playback designs built on [11] and [17]. https://pubmed.ncbi.nlm.nih.gov/41780528/
+- [MED] Recent social experience alters song behavior in Drosophila -- Roemschied FA, Ireland EC, Calhoun AJ, Choi M, Ahmed OM, Murthy M -- Current Biology 36(6):1580-1587, 2026; doi:10.1016/j.cub.2026.02.003 (PubMed 41780528; bioRxiv 10.1101/2025.09.04.674308). Audited as a claim in Track 01 [19]. Reports that recent social experience alters courtship song, so song is shaped by experience rather than fixed. This bears on playback designs built on [11] and [17]. https://pubmed.ncbi.nlm.nih.gov/41780528/
 
 ## Claims dropped in verification
 
@@ -224,6 +224,13 @@ Live-audit corrections:
 - Pugliese [9]: authorship corrected to the Tuthill and Brunton labs; Shiu is not an author.
 - FlyGM [24]: the unsupported "NeurIPS 2025" listing was removed, and the first author (Jin Z, Tsinghua University) was added.
 - flymsg [28]: the checks were redescribed as tests against known circuit functions plus agreement with Shiu's brian2 model, and the cVA statement was removed.
+
+Changed in the cross-track consistency check:
+- Function vs structure [26]: rewritten to the Okuno et al. findings the audit saw; the direct-connectivity and mushroom-body finding belongs to Turner, Mann & Clandinin 2021 (Track 04).
+- Steinfath [12]: "only when they can reach the female" replaced by context variables and tagged [MED], matching Track 01 [15].
+- Calhoun [17]: the state-switching pair is described as "likely pIP10" and tagged [MED], since no track's audit saw its identity.
+- Lillvis [10]: raised to [HIGH], since the counts (Track 04) and the nested-pathway organisation (Tracks 01 and 06) were visible in live results.
+- Wang et al. [15]: "respond more strongly to pulse than sine" became "tuned to features of D. melanogaster courtship song", since Track 03's audit removed pulse-specific tuning.
 
 Five kinds of material were excluded as evidence without being scored:
 - upload and consciousness blogs
@@ -247,11 +254,11 @@ Five kinds of material were excluded as evidence without being scored:
 11. Flexible circuit mechanisms for context-dependent song sequencing -- Roemschied FA, Pacheco DA, ... Murthy M -- Nature 622:794-801 (PMID 37821705), 2023 -- https://www.nature.com/articles/s41586-023-06632-1
 12. A neural circuit for context-dependent multimodal signaling in Drosophila -- Steinfath E, Khalili A, Stenger M, Schultze BL, Ravindran Nair S, Alizadeh K, Clemens J -- Nature Communications (published 27 Oct 2025; bioRxiv 2024.12.04.625245), 2025 -- https://www.nature.com/articles/s41467-025-64907-9
 13. Neural network organization for courtship-song feature detection in Drosophila -- Baker CA, McKellar C, Pang R, Nern A, Dorkenwald S, Pacheco DA, ... Murthy M -- Current Biology 32(15):3317-3333 (PMID 35793679), 2022 -- https://www.cell.com/current-biology/fulltext/S0960-9822(22)00978-2
-14. Shared song detector neurons in Drosophila male and female brains drive sex-specific behaviors -- Deutsch D, Clemens J, Thiberge SY, Guan G, Murthy M -- Current Biology 29:3200-3215, 2019 -- URL not verified
-15. Neural circuit mechanisms of sexual receptivity in Drosophila females -- Wang K, Wang F, Forknall N, Yang T, Patrick C, Parekh R, Dickson BJ -- Nature 589:577-581 (DOI 10.1038/s41586-020-2972-7), 2021 -- https://ideas.repec.org/a/nat/nature/v589y2021i7843d10.1038_s41586-020-2972-7.html (RePEc index page)
+14. Shared song detector neurons in Drosophila male and female brains drive sex-specific behaviors -- Deutsch D, Clemens J, Thiberge SY, Guan G, Murthy M -- Current Biology 29:3200-3215, 2019 -- https://www.sciencedirect.com/science/article/pii/S0960982219310243
+15. Neural circuit mechanisms of sexual receptivity in Drosophila females -- Wang K, Wang F, Forknall N, Yang T, Patrick C, Parekh R, Dickson BJ -- Nature 589:577-581 (DOI 10.1038/s41586-020-2972-7), 2021 -- https://www.nature.com/articles/s41586-020-2972-7
 16. Mapping model units to visual neurons reveals population code for social behaviour -- Cowley BR, Calhoun AJ, Rangarajan N, Ireland E, Turner MH, Pillow JW, Murthy M -- Nature (May 2024; PMID 38778103), 2024 -- https://www.nature.com/articles/s41586-024-07451-8
 17. Unsupervised identification of the internal states that shape natural behavior -- Calhoun AJ, Pillow JW, Murthy M -- Nature Neuroscience 22(12):2040-2049 (PMID 31768056; Author Correction s41593-019-0571-4, PMID 31857711), 2019 -- https://www.nature.com/articles/s41593-019-0533-x
-18. Sexual dimorphism in the complete Drosophila male central nervous system connectome -- Berg S et al. (Janelia FlyEM, Cambridge Connectomics, Google Research; first author not visible in the audit) -- Cell (published 3 Sep 2026, open access; PubMed 42691995; bioRxiv 10.1101/2025.10.09.680999), 2026 -- https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6
+18. Sexual dimorphism in the complete Drosophila male central nervous system connectome -- Berg S et al. (Janelia FlyEM, Cambridge, Google) -- Cell 189(18):5504-5526.e15, 2026 (published 3 Sep 2026, open access; doi:10.1016/j.cell.2026.08.015; PubMed 42691995; bioRxiv 10.1101/2025.10.09.680999) -- https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6
 19. Distributed control circuits across a brain-and-cord connectome -- Bates AS et al. (listed as Bates, Phelps, Kim, Yang et al.; BANC consortium) -- Nature (PubMed 42259917; bioRxiv 10.1101/2025.07.31.667571), 2026 -- https://www.nature.com/articles/s41586-026-10735-w
 20. Neurotransmitter classification from electron microscopy images at synaptic sites in Drosophila melanogaster -- Eckstein N et al. -- Cell 187:2574-2594 (published 9 May 2024; doi 10.1016/j.cell.2024.03.016), 2024 -- https://www.cell.com/cell/fulltext/S0092-8674(24)00307-6
 21. Whole-brain annotation and multi-connectome cell typing of Drosophila -- Schlegel P, Yin Y, Bates AS, et al. (FlyWire Consortium) -- Nature 634:139-152 (PMID 39358521), 2024 -- https://www.nature.com/articles/s41586-024-07686-5
@@ -259,7 +266,7 @@ Five kinds of material were excluded as evidence without being scored:
 23. Online Fitting of a Connectome-Constrained Drosophila Whole-Brain Model to Calcium Imaging Data -- authors not captured -- OpenReview submission (review status not visible), 2026 -- https://openreview.net/pdf?id=wCBNxp1qWe
 24. Whole-Brain Connectomic Graph Model Enables Whole-Body Locomotion Control in Fruit Fly -- Jin Z et al. (4 authors; Tsinghua University) -- arXiv 2602.17997 (Feb 2026; peer-reviewed venue not identified; project page sites.google.com/view/flygm), 2026 -- https://arxiv.org/abs/2602.17997
 25. Neural Circuit Function Inference with LLMs -- Yin Y, Cardona A -- arXiv 2608.00059, 2026 -- https://arxiv.org/abs/2608.00059
-26. Functional connectivity, structural connectivity, and inter-individual variability in Drosophila melanogaster -- authors not captured -- eLife reviewed preprint 107990 / bioRxiv 10.1101/2025.07.01.662601, 2025 -- https://elifesciences.org/reviewed-preprints/107990
+26. Functional connectivity, structural connectivity, and inter-individual variability in Drosophila melanogaster -- Okuno T, Woodward A, Okano H, Hata J -- eLife reviewed preprint 107990 / bioRxiv 10.1101/2025.07.01.662601, 2025 -- https://elifesciences.org/reviewed-preprints/107990
 27. Activity of nested neural circuits drives different courtship songs in Drosophila -- Shiozaki HM, Wang K, Lillvis JL, Xu M, Dickson BJ, Stern DL -- Nature Neuroscience (published 28 Aug 2024; DOI 10.1038/s41593-024-01738-9; PubMed 39198658), 2024 -- https://www.nature.com/articles/s41593-024-01738-9
 28. flymsg: Simulate and view in 3D the complete male Drosophila CNS connectome -- gianlucamazza (GitHub) -- GitHub repository, releases v0.5.0/v0.5.1 (not peer-reviewed), 2026 -- https://github.com/gianlucamazza/flymsg
 
@@ -287,13 +294,13 @@ Datasets and code (named in the audit's results; repository URLs were not captur
 | 8 | Blog critique: few of ~1,300 descending neurons read out; hand-chosen mappings | [MED] | confirmed | 7 |
 | 9 | State of Brain Emulation Report 2025 reassesses progress since 2008 roadmap | [HIGH] | confirmed | 8 |
 | 10 | VNC simulations: DNg100 top driver; three-interneuron rhythm generator; DNb08 confirmed optogenetically | [MED] | corrected | 9 |
-| 11 | Eight fru/dsx VNC types form nested pathways: smaller sine, larger pulse | [MED] | confirmed | 10 |
+| 11 | Eight fru/dsx VNC types form nested pathways: smaller sine, larger pulse | [HIGH] | confirmed | 10 |
 | 12 | Compact model reproduces context-dependent song via input strength and P1a disinhibition | [HIGH] | confirmed | 11 |
-| 13 | Shared brain neurons drive song and vibration through separate premotor pathways | [HIGH] | confirmed | 12 |
+| 13 | Shared brain neurons drive song and vibration through separate premotor pathways | [MED] | confirmed | 12 |
 | 14 | 24 auditory types show a continuum of song-mode preferences from interconnectivity | [HIGH] | confirmed | 13 |
-| 15 | pC2l and vpo neurons respond more strongly to pulse than sine song | [MED] | confirmed | 14, 15, 13 |
+| 15 | pC2l prefers pulse over sine; vpo neurons tuned to conspecific song features | [MED] | confirmed | 14, 15, 13 |
 | 16 | Knockout training maps model units to LC types; population code drives courtship | [HIGH] | confirmed | 16 |
-| 17 | GLM-HMM finds three states mapping female cues to song; neuron pair switches states | [HIGH] | confirmed | 17 |
+| 17 | GLM-HMM finds three states mapping female cues to song; neuron pair (likely pIP10) switches states | [MED] | confirmed | 17 |
 | 18 | Male CNS connectome: 166,700 neurons, 11,710 types, 138 dimorphic, 289 male-specific | [HIGH] | confirmed | 18 |
 | 19 | BANC female brain-and-cord connectome: local sensory-effector loops linked by ascending/descending modules | [MED] | confirmed | 19 |
 | 20 | EM-based six-transmitter classifier: 87% per synapse, 94% per neuron | [HIGH] | confirmed | 20 |
@@ -302,6 +309,6 @@ Datasets and code (named in the audit's results; repository URLs were not captur
 | 23 | Online fitting of FlyWire-constrained firing-rate model; weights, time constants, inputs fitted | [HIGH] | confirmed | 23 |
 | 24 | FlyGM: connectome as controller graph beats random, rewired and MLP baselines | [MED] | corrected | 24 |
 | 25 | LLantia proposes cell-type functions from LLM-extracted literature plus connectome | [MED] | confirmed | 25 |
-| 26 | Resting functional correlations track direct structural connectivity; mushroom body relies on indirect | [MED] | confirmed | 26 |
+| 26 | Okuno: FC-SC correlation falls with region count; unsegregated neurons correlate more | [MED] | confirmed | 26 |
 | 27 | Imaging in singing males: sine-active neurons also pulse-active; pulse recruits more | [HIGH] | confirmed | 27 |
 | 28 | flymsg: unreviewed MaleCNS LIF model; 29 self-defined qualitative checks, no recordings | [MED] | corrected | 28 |
